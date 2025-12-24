@@ -1,6 +1,6 @@
 import React from 'react';
 import * as Icons from "lucide-react";
-import { Sun, Moon, Settings,ChevronsUpDown, LogOut, Command, } from "lucide-react";
+import { Sun, Moon, Settings,ChevronsUpDown, LogOut, Command,User } from "lucide-react";
 import { __ } from '@/lib/i18n';
 import { 
     Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, 
@@ -23,12 +23,15 @@ import {
 
 import { useTheme } from "@/contexts/theme-provider";
 
-export default function AppSidebar({ menu, user }) {
+export default function AppSidebar({ menu, user, settings }) {
     const { setTheme, theme } = useTheme();
     // Fonction de déconnexion
     const handleLogout = () => {
         axios.post('/admin/logout').then(() => window.location.href = '/admin/login');
     };
+
+    const appName = settings?.app_name || 'QuickApp';
+    const appFavicon = settings?.app_favicon;
 
     return (
         <Sidebar collapsible="icon" className="border-r border-zinc-200 dark:border-zinc-800">
@@ -38,11 +41,17 @@ export default function AppSidebar({ menu, user }) {
                     <SidebarMenuItem>
                         <SidebarMenuButton size="lg" asChild>
                             <a href="/admin/dashboard" className="flex items-center gap-3">
-                                <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-                                    <Command className="size-4" /> {/* Ton icône de Logo */}
+                                <div className="flex aspect-square size-8 items-center justify-center rounded-lg overflow-hidden">
+                                    {appFavicon ? (
+                                        <img src={appFavicon} alt={appName} className="h-full w-full object-contain" />
+                                    ) : (
+                                        <div className="bg-primary text-primary-foreground">
+                                            <Command className="size-4" />
+                                        </div>
+                                    )}
                                 </div>
                                 <div className="grid flex-1 text-left text-sm leading-tight">
-                                    <span className="truncate font-bold text-lg">SystemCore</span>
+                                    <span className="truncate font-bold text-lg">{appName}</span>
                                     <span className="truncate text-xs text-zinc-500">v1.0.4</span>
                                 </div>
                             </a>
@@ -86,8 +95,8 @@ export default function AppSidebar({ menu, user }) {
                                     size="lg"
                                     className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
                                 >
-                                    {/* Avatar */}
-                                    <div className="h-8 w-8 rounded-lg bg-zinc-100 flex items-center justify-center border border-zinc-200 overflow-hidden">
+                                    {/* Avatar - Toujours visible et rendu circulaire */}
+                                    <div className="flex aspect-square size-8 items-center justify-center rounded-full bg-zinc-100 border border-zinc-200 overflow-hidden shrink-0">
                                          {user.avatar_url ? (
                                             <img src={user.avatar_url} alt={user.name} className="h-full w-full object-cover" />
                                          ) : (
@@ -95,14 +104,14 @@ export default function AppSidebar({ menu, user }) {
                                          )}
                                     </div>
                                     
-                                    {/* Infos Utilisateur (Nom + Email) */}
-                                    <div className="grid flex-1 text-left text-sm leading-tight">
+                                    {/* Infos Utilisateur - Cachées automatiquement quand réduit */}
+                                    <div className="grid flex-1 text-left text-sm leading-tight group-data-[collapsible=icon]:hidden">
                                         <span className="truncate font-semibold">{user.name}</span>
                                         <span className="truncate text-xs text-zinc-500">{user.email}</span>
                                     </div>
-                                    
-                                    {/* Icône Chevrons */}
-                                    <ChevronsUpDown className="ml-auto size-4" />
+                        
+                                    {/* Icône Chevrons - Cachée automatiquement quand réduit */}
+                                    <ChevronsUpDown className="ml-auto size-4 shrink-0 group-data-[collapsible=icon]:hidden" />
                                 </SidebarMenuButton>
                             </DropdownMenuTrigger>
                             
@@ -128,8 +137,20 @@ export default function AppSidebar({ menu, user }) {
                                         </div>
                                     </div>
                                 </DropdownMenuLabel>
-                                
+
                                 <DropdownMenuSeparator />
+                                <DropdownMenuItem asChild>
+                                    <a href="/admin/profile" className="cursor-pointer">
+                                        <User className="mr-2 h-4 w-4" />
+                                        <span>{__('Mon Profil')}</span>
+                                    </a>
+                                </DropdownMenuItem>
+                                <DropdownMenuItem asChild>
+                                   <a href='/admin/settings' className="flex items-center gap-3">
+                                        <Settings className="mr-2 h-4 w-4" />
+                                        <span>{__('Paramètres')}</span>
+                                    </a>
+                                </DropdownMenuItem>
                                 {/* --- NOUVEAU : SÉLECTEUR DE THÈME --- */}
                                 <DropdownMenuSub>
                                         <DropdownMenuSubTrigger>
@@ -158,12 +179,6 @@ export default function AppSidebar({ menu, user }) {
                                         </DropdownMenuPortal>
                                 </DropdownMenuSub>
                                 {/* ------------------------------------ */}
-                                <DropdownMenuItem>
-                                   <a href='/admin/settings' className="flex items-center gap-3">
-                                        <Settings className="w-4 h-4" />
-                                        <span>{__('Paramètres')}</span>
-                                    </a>
-                                </DropdownMenuItem>
                                 <DropdownMenuItem onClick={handleLogout} className="text-red-600 focus:text-red-600 focus:bg-red-50">
                                     <LogOut className="mr-2 h-4 w-4" />
                                     {__('Se déconnecter')}

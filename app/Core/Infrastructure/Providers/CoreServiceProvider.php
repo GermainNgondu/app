@@ -3,6 +3,7 @@ namespace App\Core\Infrastructure\Providers;
 
 use App\Core\Support\Facades\Menu;
 use Illuminate\Support\Facades\File;
+use App\Core\System\Auth\Models\User;
 use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\ServiceProvider;
@@ -10,6 +11,8 @@ use App\Core\System\Intents\IntentManager;
 use App\Core\System\Intents\Facades\Intent;
 use App\Core\System\Features\FeatureManager;
 use App\Core\Support\Registries\MenuRegistry;
+use App\Core\System\Dashboard\Data\DashboardWidget;
+use App\Core\System\Dashboard\Services\DashboardRegistry;
 use App\Core\System\Activity\Actions\LogManualActivityAction;
 use App\Core\System\Notifications\Actions\SendNotificationAction;
 
@@ -20,6 +23,7 @@ class CoreServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
+        $this->app->singleton(DashboardRegistry::class);
         // Enregistre l'IntentManager (Singleton)
         $this->app->singleton(IntentManager::class, fn() => new IntentManager());
 
@@ -41,6 +45,7 @@ class CoreServiceProvider extends ServiceProvider
         }
 
         $this->bootMenu();
+        $this->bootDashboard();
         $this->bootBladeDirectives();
 
         // Enregistrement de l'Intent
@@ -79,12 +84,34 @@ class CoreServiceProvider extends ServiceProvider
             'route' => 'admin.dashboard',
             'order' => 1,
         ]);
-        Menu::register([
-            'label' => 'Paramètres',
-            'icon'  => 'Settings',
-            'route' => 'admin.settings',
-            'order' => 1000,
-        ]);
+    }
+
+    private function bootDashboard(): void
+    {
+        $registry = $this->app->make(DashboardRegistry::class);
+
+        // Widget 1 : Utilisateurs Totaux
+        $registry->register(
+            DashboardWidget::make('total_users')
+                ->title('Utilisateurs')
+                ->icon('Users')
+                ->order(10)
+                ->value(function() {
+                    return [
+                        'value' => User::count(),
+                        'trend' => '+12% cette semaine' // Tu pourrais calculer ça dynamiquement
+                    ];
+                })
+        );
+
+        // Widget 2 : État du Système
+        $registry->register(
+            DashboardWidget::make('system_status')
+                ->title('État Système')
+                ->icon('Activity')
+                ->order(20)
+                ->value(fn() => ['value' => 'Opérationnel', 'color' => 'text-green-500'])
+        );       
     }
 
     /**

@@ -22,7 +22,7 @@ class UserData extends Data
             'name' => $user->name,
             'email' => $user->email,
             'permissions' => $user->getAllPermissions()->pluck('name')->toArray(),
-            'avatar_url' => 'https://ui-avatars.com/api/?name=' . urlencode($user->name),
+            'avatar_url' => $user->avatar_url ?? 'https://ui-avatars.com/api/?name=' . urlencode($user->name),
         ]);
     }
 }

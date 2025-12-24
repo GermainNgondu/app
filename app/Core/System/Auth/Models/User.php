@@ -28,7 +28,8 @@ class User extends Authenticatable implements HasMedia
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
             'props'=> 'array',
-            'avatar'=> 'array'
+            'avatar'=> 'array',
+            'preferences'=> 'array'
         ];
     }
 }

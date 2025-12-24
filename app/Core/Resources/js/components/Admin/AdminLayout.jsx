@@ -6,7 +6,7 @@ import { ThemeProvider } from "@/contexts/theme-provider";
 import { Toaster } from "@/components/ui/sonner";
 import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar";
 
-export default function AdminLayout({ innerHtml, user, menu, currentRoute, title }) {
+export default function AdminLayout({ innerHtml, user, menu, currentRoute, title, settings }) {
     // On crée une référence vers la div qui contiendra le HTML Blade
     const contentRef = useRef(null);
 
@@ -34,7 +34,7 @@ export default function AdminLayout({ innerHtml, user, menu, currentRoute, title
         <ThemeProvider>
             <SidebarProvider open={sidebarOpen} onOpenChange={setSidebarOpen}>
                 <div className="flex min-h-screen w-full">
-                    <AppSidebar user={user} menu={menu} currentRoute={currentRoute} />
+                    <AppSidebar user={user} menu={menu} currentRoute={currentRoute} settings={settings} />
 
                     <SidebarInset className="flex flex-col flex-1">
                         <AdminHeader user={user} title={title} />

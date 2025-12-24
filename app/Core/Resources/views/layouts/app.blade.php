@@ -26,7 +26,8 @@
         'user' => \App\Core\System\Auth\Data\UserData::fromModel(auth()->user()),
         'menu' => \App\Core\Support\Facades\Menu::getMenu(),
         'currentRoute' => request()->route()->getName(),
-        'title' => $__env->yieldContent('title', __('Panel Administration'))
+        'title' => $__env->yieldContent('title', __('Panel Administration')),
+        'settings'=> public_settings()
     ])
         {{-- 
             SLOT : Le contenu généré par Blade (via vos contrôleurs) 

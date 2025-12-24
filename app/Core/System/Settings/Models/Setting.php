@@ -65,6 +65,28 @@ class Setting extends Model
             ]
         );
     }
+    public static function getPublicSettings(): array
+    {
+        // On définit la liste des clés qu'on veut rendre accessibles au JS
+        $keys = [
+            'app_name', 
+            'app_url', 
+            'app_logo', 
+            'app_favicon', 
+            'app_locale',
+        ];
+
+        // On construit le tableau en récupérant chaque valeur (depuis le cache)
+        $publicSettings = [];
+        foreach ($keys as $key) {
+            $publicSettings[$key] = self::get($key);
+        }
+
+        // On peut ajouter des valeurs par défaut si certaines sont nulles
+        $publicSettings['app_name'] = $publicSettings['app_name'] ?? config('app.name');
+
+        return $publicSettings;
+    }
 
     private static function castValue($value, $type)
     {
