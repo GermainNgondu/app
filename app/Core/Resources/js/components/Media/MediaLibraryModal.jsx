@@ -1,0 +1,427 @@
+import React, { useState, useEffect } from 'react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/Components/ui/dialog";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/Components/ui/tabs";
+import { Button } from "@/Components/ui/button";
+import { Input } from "@/Components/ui/input";
+import { ScrollArea } from "@/Components/ui/scroll-area";
+import { Label } from "@/Components/ui/label";
+import { 
+    UploadCloud, Check, Image as ImageIcon, Loader2, Link as LinkIcon, 
+    Search, Sparkles,Filter, FileText, Download 
+} from "lucide-react";
+import { __ } from '@/lib/i18n';
+import axios from 'axios';
+import { toast } from "sonner";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useMediaLibrary } from './hooks/useMediaLibrary';
+import { useDebounce } from '@/hooks/useDebounce';
+import { useQueryClient } from '@tanstack/react-query';
+
+export default function MediaLibraryModal({ open, onOpenChange, onSelect,multiple = false }) {
+    const queryClient = useQueryClient();
+    const [activeTab, setActiveTab] = useState("library");
+    const [loading, setLoading] = useState(false);
+    const [page, setPage] = useState(1);
+    const [search, setSearch] = useState("");
+    const [fileType, setFileType] = useState("all");
+    // État pour la sélection multiple (on stocke les objets média complets)
+    const [selectedMedia, setSelectedMedia] = useState([]);
+
+    // Gérer le clic sur un média
+    const toggleSelection = (file) => {
+        if (!multiple) {
+            onSelect(file.url); // En mode simple, on sélectionne et ferme direct
+            onOpenChange(false);
+            return;
+        }
+
+        // En mode multiple, on toggle dans la liste
+        setSelectedMedia(prev => {
+            const isSelected = prev.find(m => m.id === file.id);
+            if (isSelected) {
+                return prev.filter(m => m.id !== file.id);
+            } else {
+                return [...prev, file];
+            }
+        });
+    };
+
+    // Validation de la sélection multiple
+    const confirmSelection = () => {
+        onSelect(selectedMedia.map(m => m.url)); // On renvoie un tableau d'URLs
+        onOpenChange(false);
+        setSelectedMedia([]);
+    };   
+    
+    // On debounce la recherche pour ne pas spammer l'API à chaque frappe
+    const debouncedSearch = useDebounce(search, 500); 
+
+    // --- APPEL TANSTACK QUERY ---
+    const { data: mediaData, isLoading, isError, isFetching } = useMediaLibrary({
+        page,
+        search: debouncedSearch,
+        type: fileType,
+        // collection: 'default' // Tu pourrais filtrer par collection si besoin
+    });
+
+    // Helper pour la pagination
+    const files = mediaData?.data || [];
+    const meta = mediaData?.meta;
+
+    // États pour Unsplash
+    const [unsplashQuery, setUnsplashQuery] = useState("");
+    const [unsplashResults, setUnsplashResults] = useState([]);
+
+    // États pour AI
+    const [aiPrompt, setAiPrompt] = useState("");
+    const [aiGeneratedImage, setAiGeneratedImage] = useState(null);
+
+    // États pour URL
+    const [externalUrl, setExternalUrl] = useState("");
+
+
+
+    // --- 2. UPLOAD CLASSIQUE ---
+    const handleFileUpload = async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        const formData = new FormData();
+        formData.append('file', file);
+        processUpload('/admin/media/upload', formData);
+    };
+
+
+    // --- 3. UPLOAD VIA URL ---
+    const handleUrlUpload = async () => {
+        if (!externalUrl) return;
+        processUpload('/admin/media/upload-url', { url: externalUrl });
+    };
+
+
+    // --- 4. UNSPLASH ---
+    const searchUnsplash = async (e) => {
+        if (e) e.preventDefault();
+        if (!unsplashQuery) return;
+
+        setLoading(true);
+        try {
+            const res = await axios.get('/admin/media/unsplash/search', { 
+                params: { query: unsplashQuery } 
+            });
+
+            const results = Array.isArray(res.data) ? res.data : (res.data.results || []);
+            setUnsplashResults(results);
+            
+        } catch (error) {
+            toast.error(__('Erreur lors de la recherche Unsplash'));
+            setUnsplashResults([]); // On reset à un tableau vide en cas d'erreur
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const saveUnsplash = async (imageUrl) => {
+        // On envoie l'URL au backend pour qu'il la télécharge et la stocke localement
+        processUpload('/admin/media/unsplash/save', { url: imageUrl });
+    };
+
+
+    // --- 5. AI GENERATION ---
+    const generateAiImage = async () => {
+        if (!aiPrompt) return;
+        setLoading(true);
+        setAiGeneratedImage(null);
+        try {
+            // Le backend appelle OpenAI et retourne une URL temporaire ou base64
+            const res = await axios.post('/admin/media/ai/generate', { prompt: aiPrompt });
+            setAiGeneratedImage(res.data.url); 
+        } catch (error) {
+            toast.error(__('Erreur lors de la génération.'));
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const saveAiImage = async () => {
+        if (!aiGeneratedImage) return;
+        processUpload('/admin/media/upload-url', { url: aiGeneratedImage });
+    };
+
+
+    // --- FONCTION GÉNÉRIQUE DE TRAITEMENT ---
+    const processUpload = async (endpoint, payload) => {
+        setLoading(true);
+        try {
+            const res = await axios.post(endpoint, payload);
+            toast.success(__('Média ajouté avec succès !'));
+            
+            // Si on a un callback onSelect (ex: Settings page), on l'utilise
+            if (onSelect) {
+                onSelect(res.data.url);
+                onOpenChange(false);
+            } else {
+                // Sinon on retourne à la bibliothèque
+                setActiveTab("library");
+                fetchFiles();
+            }
+        } catch (error) {
+            toast.error(__('Une erreur est survenue.'));
+        } finally {
+            setLoading(false);
+            setExternalUrl("");
+            setAiGeneratedImage(null);
+            setAiPrompt("");
+        }
+    };
+
+
+    return (
+        <Dialog open={open} onOpenChange={onOpenChange}>
+            <DialogContent className="max-w-7xl h-[85vh] flex flex-col p-0 gap-0 bg-white dark:bg-zinc-950">
+                <DialogHeader className="px-6 py-4 border-b border-zinc-200 dark:border-zinc-800">
+                    <DialogTitle>{__('Gestionnaire de Médias')}</DialogTitle>
+                </DialogHeader>
+
+                <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col overflow-hidden">
+                    <div className="px-6 py-2 border-b border-zinc-200 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-900/50">
+                        <TabsList className="bg-transparent p-0 gap-6">
+                            <TabsTrigger value="library">{__('Bibliothèque')}</TabsTrigger>
+                            <TabsTrigger value="upload">{__('Téléverser')}</TabsTrigger>
+                            <TabsTrigger value="url">{__('Depuis URL')}</TabsTrigger>
+                            <TabsTrigger value="unsplash">Unsplash</TabsTrigger>
+                            <TabsTrigger value="ai">{__('IA Générative')}</TabsTrigger>
+                        </TabsList>
+                    </div>
+
+                    {/* === 1. BIBLIOTHÈQUE === */}
+                    <TabsContent value="library" className="flex-1 flex flex-col p-0 m-0">
+                        {/* BARRE D'OUTILS (FILTRES) */}
+                        <div className="p-4 border-b flex items-center gap-4 bg-zinc-50/50">
+                            <div className="relative flex-1 max-w-sm">
+                                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-zinc-500" />
+                                <Input 
+                                    placeholder="Rechercher un fichier..." 
+                                    className="pl-9 bg-white" 
+                                    value={search}
+                                    onChange={(e) => { setSearch(e.target.value); setPage(1); }} // Reset page on search
+                                />
+                            </div>
+                            
+                            <Select value={fileType} onValueChange={(val) => { setFileType(val); setPage(1); }}>
+                                <SelectTrigger className="w-[180px] bg-white">
+                                    <div className="flex items-center gap-2">
+                                        <Filter className="w-4 h-4 text-zinc-500"/>
+                                        <SelectValue placeholder="Type de fichier" />
+                                    </div>
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="all">Tout voir</SelectItem>
+                                    <SelectItem value="image">Images</SelectItem>
+                                    <SelectItem value="document">Documents</SelectItem>
+                                </SelectContent>
+                            </Select>
+
+                            {/* Indicateur de chargement discret (IsFetching) */}
+                            {isFetching && !isLoading && <Loader2 className="w-4 h-4 animate-spin text-primary ml-auto" />}
+                        </div>
+                        {/* GRILLE DE RÉSULTATS */}
+                        <ScrollArea className="flex-1 p-6">
+                            {isLoading ? (
+                                <div className="flex justify-center items-center h-40">
+                                    <Loader2 className="animate-spin h-8 w-8 text-primary" />
+                                </div>
+                            ) : files.length === 0 ? (
+                                <div className="text-center py-20 text-zinc-500">
+                                    <p>Aucun média trouvé pour ces critères.</p>
+                                </div>
+                            ) : (
+                                <div className="grid grid-cols-2 md:grid-cols-5 gap-4 pb-10">
+                                    {files.map((file) => {
+                                        const isSelected = selectedMedia.some(m => m.id === file.id);
+                                        return (
+                                        <div 
+                                            key={file.id} 
+                                            className={`group relative aspect-square border-2 rounded-lg overflow-hidden cursor-pointer transition-all ${
+                                                isSelected ? 'border-primary ring-2 ring-primary/20' : 'border-zinc-200'
+                                            }`}
+                                            onClick={() => toggleSelection(file)}
+                                        >
+                                            {file.mime_type.startsWith('image/') ? (
+                                                <>
+                                                <img src={file.thumbnail || file.url} alt={file.name} className="w-full h-full object-cover" />
+                                                
+                                                {isSelected && (
+                                                    <div className="absolute top-2 right-2 bg-primary text-white rounded-full p-1 shadow-lg">
+                                                        <Check className="w-3 h-3" />
+                                                    </div>
+                                                )}
+                                                </>
+                                            ) : (
+                                                <div className="flex flex-col items-center justify-center h-full text-zinc-500">
+                                                    <FileText className="w-12 h-12 mb-2" />
+                                                    <span className="text-xs truncate max-w-[90%] px-2">{file.file_name}</span>
+                                                </div>
+                                            )}
+                                            
+                                            {/* Overlay d'info au survol */}
+                                            <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center text-white p-2 text-center">
+                                                <span className="text-xs font-medium truncate w-full">{file.name}</span>
+                                                <span className="text-[10px] opacity-70">{(file.size / 1024).toFixed(1)} KB</span>
+                                            </div>
+                                        </div>
+                                        );
+                                    })}
+                                </div>
+                            )}
+                        </ScrollArea>
+
+                        {/* PAGINATION FOOTER */}
+                        {meta && meta.last_page > 1 && (
+                            <div className="p-4 border-t bg-zinc-50 flex items-center justify-between text-sm">
+                                <span className="text-zinc-500">
+                                    Page {meta.current_page} sur {meta.last_page}
+                                </span>
+                                <div className="flex gap-2">
+                                    <Button 
+                                        variant="outline" size="sm" 
+                                        disabled={meta.current_page === 1}
+                                        onClick={() => setPage(p => Math.max(1, p - 1))}
+                                    >
+                                        Précédent
+                                    </Button>
+                                    <Button 
+                                        variant="outline" size="sm"
+                                        disabled={meta.current_page === meta.last_page}
+                                        onClick={() => setPage(p => p + 1)}
+                                    >
+                                        Suivant
+                                    </Button>
+                                </div>
+                            </div>
+                        )}
+
+                        {multiple && (
+                        <div className="p-4 border-t bg-zinc-50 flex items-center justify-between">
+                                <span className="text-sm font-medium">
+                                    {selectedMedia.length} {__('élément(s) sélectionné(s)')}
+                                </span>
+                                <div className="flex gap-2">
+                                    <Button variant="ghost" onClick={() => setSelectedMedia([])}>
+                                        {__('Annuler')}
+                                    </Button>
+                                    <Button onClick={confirmSelection} disabled={selectedMedia.length === 0}>
+                                        {__('Insérer la sélection')}
+                                    </Button>
+                                </div>
+                            </div>
+                        )}
+                    </TabsContent>
+
+                    {/* === 2. UPLOAD LOCAL === */}
+                    <TabsContent value="upload" className="flex-1 flex flex-col items-center justify-center p-10 m-0">
+                        <div className="border-2 border-dashed border-zinc-200 dark:border-zinc-800 rounded-xl p-10 text-center w-full max-w-4xl bg-zinc-50 dark:bg-zinc-900/50 relative hover:bg-zinc-100 transition">
+                            <input type="file" className="absolute inset-0 opacity-0 cursor-pointer" multiple={multiple} onChange={handleFileUpload} accept="image/*" disabled={loading} />
+                            <div className="flex flex-col items-center gap-2">
+                                {loading ? <Loader2 className="h-10 w-10 animate-spin text-primary" /> : <UploadCloud className="h-10 w-10 text-zinc-400" />}
+                                <h3 className="font-semibold">{__('Déposer un fichier ici')}</h3>
+                            </div>
+                        </div>
+                    </TabsContent>
+
+                    {/* === 3. URL EXTERNE === */}
+                    <TabsContent value="url" className="flex-1 flex flex-col items-center justify-center p-10 m-0 space-y-4">
+                        <div className="w-full max-w-md space-y-4">
+                            <div className="space-y-2">
+                                <Label>{__('URL de l\'image')}</Label>
+                                <div className="flex gap-2">
+                                    <Input placeholder="https://..." value={externalUrl} onChange={e => setExternalUrl(e.target.value)} />
+                                    <Button onClick={handleUrlUpload} disabled={loading || !externalUrl}>
+                                        {loading ? <Loader2 className="animate-spin w-4 h-4"/> : <Download className="w-4 h-4"/>}
+                                    </Button>
+                                </div>
+                            </div>
+                            {externalUrl && (
+                                <div className="aspect-video bg-zinc-100 rounded-md border flex items-center justify-center overflow-hidden">
+                                    <img src={externalUrl} className="h-full object-contain" onError={(e) => e.target.style.display='none'} />
+                                </div>
+                            )}
+                        </div>
+                    </TabsContent>
+
+                    {/* === 4. UNSPLASH === */}
+                    <TabsContent value="unsplash" className="flex-1 p-0 m-0 flex flex-col">
+                        <div className="p-4 border-b flex gap-2">
+                            <div className="relative flex-1">
+                                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-zinc-500" />
+                                <Input className="pl-9" placeholder={__('Rechercher sur Unsplash...')} value={unsplashQuery} onChange={e => setUnsplashQuery(e.target.value)} onKeyDown={e => e.key === 'Enter' && searchUnsplash(e)} />
+                            </div>
+                            <Button onClick={searchUnsplash} disabled={loading}>{__('Rechercher')}</Button>
+                        </div>
+                        <ScrollArea className="flex-1 p-4">
+                            <div className="columns-2 md:columns-4 gap-4 space-y-4">
+                                {Array.isArray(unsplashResults) && unsplashResults.length > 0 ? (
+                                            unsplashResults.map((img) => (
+                                                <div 
+                                                    key={img.id} 
+                                                    className="break-inside-avoid relative group rounded-lg overflow-hidden cursor-pointer" 
+                                                    onClick={() => saveUnsplash(img.urls.regular)}
+                                                >
+                                                    <img src={img.urls.small} className="w-full h-auto" loading="lazy" />
+                                                    <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white font-medium text-xs">
+                                                        {__('Importer')}
+                                                    </div>
+                                                </div>
+                                            ))
+                                        ) : !loading && (
+                                            <div className="text-center py-20 text-zinc-500 col-span-full">
+                                                {__('Aucun résultat pour cette recherche.')}
+                                            </div>
+                                        )}
+                            </div>
+                        </ScrollArea>
+                    </TabsContent>
+
+                    {/* === 5. AI GENERATION === */}
+                    <TabsContent value="ai" className="flex-1 flex flex-col p-6 gap-6">
+                        <div className="flex gap-4 items-start max-w-3xl mx-auto w-full">
+                            <div className="flex-1 space-y-2">
+                                <Label>{__('Décrivez l\'image à générer')}</Label>
+                                <Input placeholder="Un chat astronaute sur la lune, style cyberpunk..." value={aiPrompt} onChange={e => setAiPrompt(e.target.value)} />
+                            </div>
+                            <Button className="mt-5" onClick={generateAiImage} disabled={loading || !aiPrompt}>
+                                <Sparkles className="mr-2 h-4 w-4" /> {__('Générer')}
+                            </Button>
+                        </div>
+                        <div className="max-w-3xl m-auto w-full">
+                            <div className="h-96 flex-1 flex items-center justify-center bg-zinc-50/50 rounded-xl border-2 border-dashed">
+                                {loading ? (
+                                    <div className="text-center space-y-2">
+                                        <Loader2 className="h-8 w-8 animate-spin mx-auto text-purple-500" />
+                                        <p className="text-sm text-zinc-500">{__('Création en cours par l\'IA...')}</p>
+                                    </div>
+                                ) : aiGeneratedImage ? (
+                                    <div className="relative group max-h-[400px] p-4">
+                                        <img src={aiGeneratedImage} className="max-h-[400px] rounded-lg shadow-lg" />
+                                        <div className="absolute bottom-8 right-8 flex gap-2">
+                                            <Button onClick={saveAiImage}>
+                                                <Check className="mr-2 h-4 w-4" /> {__('Enregistrer')}
+                                            </Button>
+                                        </div>
+                                    </div>
+                                ) : (
+                                    
+                                    <div className="text-center text-zinc-400">
+                                        <Sparkles className="h-12 w-12 mx-auto mb-2 opacity-20" />
+                                        <p>{__('L\'image générée apparaîtra ici')}</p>
+                                    </div>
+                                )}
+                            </div>                            
+                        </div>
+
+                    </TabsContent>
+
+                </Tabs>
+            </DialogContent>
+        </Dialog>
+    );
+}
