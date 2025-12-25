@@ -14,7 +14,6 @@
                 name: "{{ setting('app_name', config('app.name')) }}",
                 version: "{{ $appVersion }}",
             };
-            window.translations = {!! \App\Core\Support\Helpers\TranslationHelper::getJsonTranslations() !!};
             window.locale = "{{ app()->getLocale() }}";
         </script>
     </head>

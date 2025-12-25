@@ -6,6 +6,7 @@ use DateTimeZone;
 use Illuminate\Http\Request;
 use Lorisleiva\Actions\Concerns\AsAction;
 use App\Core\System\Settings\Models\Setting;
+use App\Core\Support\Helpers\TranslationHelper;
 
 class GetSettingsAction
 {
@@ -19,14 +20,8 @@ class GetSettingsAction
             
             // 2. Les métadonnées (Options pour les selecteurs)
             'meta' => [
-                'timezones' => DateTimeZone::listIdentifiers(), // Liste officielle PHP
-                'locales' => [
-                    ['code' => 'fr', 'label' => 'Français'],
-                    ['code' => 'en', 'label' => 'English'],
-                    ['code' => 'es', 'label' => 'Español'],
-                    ['code' => 'ar', 'label' => 'Arabe'],
-                    // Tu pourras ajouter d'autres langues ici dynamiquement via config
-                ]
+                'timezones' => DateTimeZone::listIdentifiers(),
+                'locales' => TranslationHelper::getAvailableLocales()
             ]
         ];
     }

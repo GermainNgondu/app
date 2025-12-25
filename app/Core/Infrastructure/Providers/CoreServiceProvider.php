@@ -173,6 +173,7 @@ class CoreServiceProvider extends ServiceProvider
         $this->loadMigrationsFrom(app_path('Core/Database/Migrations'));
         $this->loadViewsFrom(app_path('Core/Resources/views'), 'core');
         $this->loadJsonTranslationsFrom(app_path('Core/Resources/lang'));
+        $this->loadTranslationsFrom(app_path('Core/Resources/lang'), 'core');
     }
 
     /**

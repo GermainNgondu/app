@@ -1,12 +1,27 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+use App\Core\Support\Helpers\TranslationHelper;
 use App\Core\System\Settings\Actions\GetSettingsAction;
 use App\Core\System\Auth\Actions\UpdateUserProfileAction;
 use App\Core\System\Settings\Actions\UpdateSettingsAction;
 use App\Core\System\Dashboard\Actions\ReorderWidgetsAction;
 use App\Core\System\Dashboard\Actions\GetDashboardStatsAction;
 use App\Core\System\Dashboard\Actions\GetDashboardWidgetsAction;
+
+
+Route::get('/lang/{locale}', function ($locale) {
+
+    $check =  collect(TranslationHelper::getAvailableLocales())->where('code',$locale)->first();
+
+    if (!$check) {
+        abort(404);
+    }
+    
+    app()->setLocale($locale);
+    
+    return response()->json(json_decode(TranslationHelper::getJsonTranslations(), true));
+});
 
 Route::middleware(['web', 'auth'])->prefix('admin')->group(function () {
     

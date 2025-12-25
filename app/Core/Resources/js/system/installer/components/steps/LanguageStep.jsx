@@ -3,14 +3,19 @@ import { Button } from "@ui/button";
 import { Check } from "lucide-react";
 import { cn } from "@/common/lib/utils";
 
-const languages = [
-    { code: 'fr', label: 'Français', flag: '🇫🇷' },
-    { code: 'en', label: 'English', flag: '🇺🇸' },
-];
 
 export default function LanguageStep({ onNext }) {
-    const [selected, setSelected] = useState(window.locale || 'en');
-    const [loading, setLoading] = useState(false);
+    const [languages, setLanguages] = useState([]);
+    const [loading, setLoading] = useState(true);
+
+    // Chargement dynamique au montage
+    useEffect(() => {
+        axios.get('/install/locales')
+            .then(res => {
+                setLanguages(res.data);
+                setLoading(false);
+            });
+    }, []);
 
     const handleLanguageChange = async (code) => {
         setSelected(code);

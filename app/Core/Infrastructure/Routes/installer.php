@@ -1,6 +1,7 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+use App\Core\Support\Helpers\TranslationHelper;
 use App\Core\System\Auth\Actions\CreateAdminAction;
 use App\Core\System\Installer\Data\DatabaseConfigData;
 use App\Core\System\Installer\Actions\MigrateDatabaseAction;
@@ -16,9 +17,14 @@ Route::prefix('install')->name('installer.')->group(function () {
     Route::get('/', function () {
         return view('core::installer.index');
     })->name('index');
+
+    Route::get('/locales', function () {
+        return response()->json(TranslationHelper::getAvailableLocales());
+    });
+    
     Route::post('/locale', function (Illuminate\Http\Request $request) {
         $locale = $request->input('locale');
-        if (in_array($locale, ['fr', 'en', 'es'])) {
+        if (in_array($locale, TranslationHelper::getAvailableLocales())) {
             session(['locale' => $locale]);
             Illuminate\Support\Facades\App::setLocale($locale);
         }
