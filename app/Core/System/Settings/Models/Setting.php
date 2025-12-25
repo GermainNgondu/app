@@ -3,6 +3,7 @@
 namespace App\Core\System\Settings\Models;
 
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Database\Eloquent\Model;
 
 class Setting extends Model
@@ -39,6 +40,12 @@ class Setting extends Model
      */
     public static function get(string $key, $default = null)
     {
+        $exist = Schema::hasTable('settings');
+
+        if(!$exist)
+        {
+            return $default;
+        }
         $settings = Cache::rememberForever('core.settings.all', function () {
             return self::all()->keyBy('key');
         });

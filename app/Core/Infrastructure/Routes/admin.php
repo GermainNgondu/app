@@ -5,14 +5,8 @@ use App\Core\System\Admin\Actions\DashboardAction;
 use App\Core\System\Media\Actions\UploadMediaAction;
 use App\Core\System\Media\Actions\GetMediaListAction;
 use App\Core\System\Media\Actions\SearchUnsplashAction;
-use App\Core\System\Settings\Actions\GetSettingsAction;
-use App\Core\System\Auth\Actions\UpdateUserProfileAction;
-use App\Core\System\Settings\Actions\UpdateSettingsAction;
-use App\Core\System\Dashboard\Actions\ReorderWidgetsAction;
 use App\Core\System\Media\Actions\UploadFromUnsplashAction;
 use App\Core\System\Media\Actions\UploadMediaFromUrlAction;
-use App\Core\System\Dashboard\Actions\GetDashboardStatsAction;
-use App\Core\System\Dashboard\Actions\GetDashboardWidgetsAction;
 use App\Core\System\Media\Actions\GenerateAndUploadAiImageAction;
 
 Route::middleware(['web', 'auth'])->prefix('admin')->group(function () {
@@ -24,23 +18,10 @@ Route::middleware(['web', 'auth'])->prefix('admin')->group(function () {
         return view('core::admin.settings');
     })->name('admin.settings');
     
-    Route::get('api/settings', GetSettingsAction::class)->name('admin.api.settings.show');
-    Route::post('api/settings', UpdateSettingsAction::class)->name('admin.settings.update');
-
-    Route::get('api/dashboard/stats', GetDashboardStatsAction::class)->name('admin.api.dashboard.stats');
-    // Route pour récupérer tous les widgets dynamiques
-    Route::get('api/dashboard/widgets', GetDashboardWidgetsAction::class)->name('admin.api.dashboard.widgets');
-
-    // Route pour sauvegarder le nouvel ordre après un Drag & Drop
-    Route::post('api/dashboard/reorder', ReorderWidgetsAction::class)->name('admin.api.dashboard.reorder');
-    
     // Page d'affichage (Blade -> React)
     Route::get('profile', function () {
         return view('core::admin.profile'); // Vue wrapper simple
     })->name('admin.profile.edit');
-
-    // API de mise à jour
-    Route::post('api/profile', UpdateUserProfileAction::class)->name('admin.api.profile.update');
 
     Route::prefix('media')->group(function () {
 

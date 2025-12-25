@@ -1,10 +1,9 @@
 @extends('core::layouts.app')
 
-@section('title', __('Mon Profil'))
+@section('title', ucfirst(__('profile')))
 
 @section('content')
-    
-    @react('Core::Admin/Profile/ProfilePage', [
+    @react('Core::system/profile/components/ProfilePage', [
         'user' => auth()->user()
     ])
     @endreact

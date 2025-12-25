@@ -5,7 +5,7 @@
   "tsx": false,
   "tailwind": {
     "config": "app/Core/Resources/css/app.css", 
-    "css": "app/Core/Resources/js/lib/utils.js",
+    "css": "app/Core/Resources/js/common/lib/utils.js",
     "baseColor": "zinc",
     "cssVariables": true,
     "prefix": ""
@@ -13,10 +13,10 @@
   "iconLibrary": "lucide",
   "aliases": {
     "components": "@/components",
-    "utils": "@/lib/utils",
-    "ui": "@/components/ui",
-    "lib": "@/lib",
-    "hooks": "@/hooks"
+    "utils": "@/common/lib/utils",
+    "ui": "@/ui",
+    "lib": "@/common/lib",
+    "hooks": "@/common/hooks"
   },
   "registries": {}
 }

@@ -3,18 +3,20 @@ namespace App\Core\Infrastructure\Providers;
 
 use App\Core\Support\Facades\Menu;
 use Illuminate\Support\Facades\File;
+use Illuminate\Support\Facades\View;
 use App\Core\System\Auth\Models\User;
 use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\ServiceProvider;
 use App\Core\System\Intents\IntentManager;
 use App\Core\System\Intents\Facades\Intent;
 use App\Core\System\Features\FeatureManager;
-use App\Core\Support\Registries\MenuRegistry;
 use App\Core\System\Dashboard\Data\DashboardWidget;
 use App\Core\System\Dashboard\Services\DashboardRegistry;
 use App\Core\System\Activity\Actions\LogManualActivityAction;
 use App\Core\System\Notifications\Actions\SendNotificationAction;
+
 
 class CoreServiceProvider extends ServiceProvider
 {
@@ -36,7 +38,12 @@ class CoreServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        
+        $composerData = json_decode(file_get_contents(base_path('composer.json')), true);
+        $appVersion = $composerData['version'] ?? '1.0.0';
+
+        // Partager avec toutes les vues Blade
+        View::share('appVersion', $appVersion);
+
         $this->registerCoreResources();
         $this->registerCoreRoutes();
 
@@ -64,10 +71,13 @@ class CoreServiceProvider extends ServiceProvider
 
         // Sécurité supplémentaire : si on est en ligne de commande (migrations), 
         // on évite aussi de bloquer le processus
+
         if ($this->app->runningInConsole()) {
-            // Optionnel : on peut vérifier si la table existe vraiment
-            // return Schema::hasTable('features');
-            return $installed; 
+            return Schema::hasTable('features');
+        }
+
+        if ($installed) {
+            return Schema::hasTable('features');
         }
 
         return $installed;
@@ -80,7 +90,7 @@ class CoreServiceProvider extends ServiceProvider
     {
         Menu::register([
             'label' => 'Dashboard',
-            'icon'  => 'LayoutDashboard',
+            'icon' => 'LayoutDashboard',
             'route' => 'admin.dashboard',
             'order' => 1,
         ]);
@@ -93,10 +103,10 @@ class CoreServiceProvider extends ServiceProvider
         // Widget 1 : Utilisateurs Totaux
         $registry->register(
             DashboardWidget::make('total_users')
-                ->title('Utilisateurs')
+                ->title('users')
                 ->icon('Users')
                 ->order(10)
-                ->value(function() {
+                ->value(function () {
                     return [
                         'value' => User::count(),
                         'trend' => '+12% cette semaine' // Tu pourrais calculer ça dynamiquement
@@ -111,7 +121,7 @@ class CoreServiceProvider extends ServiceProvider
                 ->icon('Activity')
                 ->order(20)
                 ->value(fn() => ['value' => 'Opérationnel', 'color' => 'text-green-500'])
-        );       
+        );
     }
 
     /**
@@ -152,8 +162,9 @@ class CoreServiceProvider extends ServiceProvider
                     unset(\$__componentName, \$__reactProps, \$__reactParams, \$__slotContent);
                 ?>
                 PHP;
-       });
+        });
     }
+
     /**
      * Charge les migrations, vues et traductions du Core.
      */
@@ -183,7 +194,7 @@ class CoreServiceProvider extends ServiceProvider
         $manager = app(FeatureManager::class);
 
         foreach ($manager->getActiveFeatures() as $feature) {
-            
+
             $providerClass = "App\\Features\\" . ucfirst($feature->name) . "\\Providers\\" . ucfirst($feature->name) . "ServiceProvider";
 
             if (class_exists($providerClass)) {

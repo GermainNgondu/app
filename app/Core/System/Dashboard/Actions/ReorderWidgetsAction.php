@@ -18,7 +18,7 @@ class ReorderWidgetsAction
         // 1. On récupère les préférences actuelles de l'utilisateur
         // On suppose que tu as une colonne 'preferences' de type JSON sur ta table users
         $preferences = $user->preferences ?? [];
-        
+
         // 2. On extrait le nouvel ordre
         // On crée un tableau associatif : ['widget_key' => position]
         $newOrder = [];
@@ -47,13 +47,13 @@ class ReorderWidgetsAction
         ]);
 
         $this->handle(
-            $request->input('widgets'), 
+            $request->input('widgets'),
             Auth::user()
         );
 
         return response()->json([
             'status' => 'success',
-            'message' => __('Ordre du tableau de bord mis à jour.')
+            'message' => __('order_updated')
         ]);
     }
 }

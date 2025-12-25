@@ -11,17 +11,11 @@ class LoginAction
 {
     use AsAction;
 
-    /**
-     * Autoriser tout le monde à voir/soumettre le login
-     */
     public function authorize(): bool
     {
         return Auth::guest();
     }
 
-    /**
-     * Logique de traitement de la connexion
-     */
     public function handle(LoginData $data): bool
     {
         if (!Auth::attempt($data->only('email', 'password')->toArray(), $data->remember)) {
@@ -35,20 +29,20 @@ class LoginAction
         return true;
     }
 
-    /**
-     * Point d'entrée HTTP
-     */
     public function asController(LoginData $data)
     {
-        if (! $this->handle($data)) {
+        // On exécute la logique (qui gère déjà les erreurs de validation via handle)
+        $this->handle($data);
 
-            throw ValidationException::withMessages([
-                'email' => __('auth.failed'),
+        // On prépare la redirection "intended" (vers la page demandée initialement ou le dashboard)
+        $redirect = redirect()->intended(route('admin.dashboard'));
+
+        // SI c'est une requête AJAX (Axios), on renvoie du JSON
+        if (request()->wantsJson()) {
+            return response()->json([
+                'redirect' => $redirect->getTargetUrl()
             ]);
         }
-
-        request()->session()->regenerate();
-
-        return redirect()->intended(route('admin.dashboard'));
+        return $redirect;
     }
 }

@@ -1,8 +1,9 @@
 {
     "$schema": "https://getcomposer.org/schema.json",
-    "name": "laravel/laravel",
+    "name": "quickapp/quickapp",
+    "version": "1.0.0",
     "type": "project",
-    "description": "The skeleton application for the Laravel framework.",
+    "description": "The QuickApp base to build your next Laravel application.",
     "keywords": [
         "laravel",
         "framework"

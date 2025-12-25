@@ -18,7 +18,7 @@ class UpdateSettingsAction
                 ['key' => $key],
                 ['value' => $value],
             );
-            
+
             // Invalidation du cache pour cette clé
             cache()->forget("setting.{$key}");
         }
@@ -33,7 +33,7 @@ class UpdateSettingsAction
 
         return response()->json([
             'status' => 'success',
-            'message' => __('Paramètres mis à jour avec succès.')
+            'message' => __('settings_updated_success')
         ]);
     }
 }

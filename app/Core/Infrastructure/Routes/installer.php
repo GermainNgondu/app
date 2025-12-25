@@ -16,7 +16,17 @@ Route::prefix('install')->name('installer.')->group(function () {
     Route::get('/', function () {
         return view('core::installer.index');
     })->name('index');
-
+    Route::post('/locale', function (Illuminate\Http\Request $request) {
+        $locale = $request->input('locale');
+        if (in_array($locale, ['fr', 'en', 'es'])) {
+            session(['locale' => $locale]);
+            Illuminate\Support\Facades\App::setLocale($locale);
+        }
+        return response()->json([
+            'status' => 'success',
+            'translations' => \App\Core\Support\Helpers\TranslationHelper::getJsonTranslations()
+        ]);
+    });
     // Endpoints API pour le Wizard React
     Route::get('/requirements', CheckRequirementsAction::class);
     Route::get('/permissions', CheckPermissionsAction::class);

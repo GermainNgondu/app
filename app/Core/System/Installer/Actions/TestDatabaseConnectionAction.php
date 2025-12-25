@@ -23,30 +23,30 @@ class TestDatabaseConnectionAction
         try {
 
             $config = $this->makeConfig($data->toArray());
-            
+
             DB::purge();
-            
+
             app(ConnectionFactory::class)->make($config)->getPdo();
 
             return true;
 
         } catch (Exception $e) {
             // Debug : On écrit l'erreur réelle dans les logs pour vous aider
-            Log::error("Échec de connexion Installer : " . $e->getMessage());
-            
+            Log::error("Installer connection failed : " . $e->getMessage());
+
             // On renvoie l'erreur à React
-            throw new Exception("Erreur de connexion : " . $this->translateError($e->getMessage()));
+            throw new Exception(__('connection_error') . $this->translateError($e->getMessage()));
         }
     }
 
-        /**
+    /**
      * @param array $dbArgs
      * @return mixed
      */
     public function makeConfig(array $data): mixed
     {
         $connection = $data['driver'] ?? 'mysql';
-        $connectionConfig = config('database.connections.'.$connection);
+        $connectionConfig = config('database.connections.' . $connection);
 
         $connectionConfig['host'] = $data['db_host'];
         $connectionConfig['port'] = $data['db_port'];
@@ -59,9 +59,12 @@ class TestDatabaseConnectionAction
 
     private function translateError($message): string
     {
-        if (str_contains($message, 'Access denied')) return "Utilisateur ou mot de passe incorrect.";
-        if (str_contains($message, 'Unknown database')) return "La base de données n'existe pas.";
-        if (str_contains($message, 'Connection refused')) return "Le serveur MySQL est injoignable (Host/Port incorrect).";
+        if (str_contains($message, 'Access denied'))
+            return __('incorrect_credentials');
+        if (str_contains($message, 'Unknown database'))
+            return __('db_not_exist');
+        if (str_contains($message, 'Connection refused'))
+            return __('mysql_server_unreachable');
         return $message;
     }
 }

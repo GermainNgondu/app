@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="{{ str_replace('_', '-', app()->getLocale()) }}" class="dark">
+<html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
     <head>
         <meta charset="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -16,9 +16,9 @@
         <div class="bg-background flex min-h-svh flex-col items-center justify-center gap-6 p-6 md:p-10">
             <div class="flex w-full max-w-sm flex-col gap-2">
                 <div class="flex flex-col items-center gap-2 font-medium">
-                    <span class="flex max-w-36 mb-1 items-center justify-center rounded-md">
+                    <div class="flex max-w-36 mb-1 items-center justify-center rounded-md">
                         <img src="{{asset(setting('app_logo'))}}" alt="Logo">
-                    </span>
+                    </div>
                 </div>
             </div>
         </div>

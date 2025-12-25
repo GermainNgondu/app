@@ -1,7 +1,7 @@
 @extends('core::layouts.app')
 
-@section('title', __('Dashboard'))
+@section('title', ucfirst(__('dashboard')))
 
 @section('content')
-    @react('Core::Admin/Dashboard/DashboardPage')@endreact
+    @react('Core::system/dashboard/components/DashboardPage')@endreact
 @endsection

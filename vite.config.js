@@ -19,9 +19,17 @@ export default defineConfig({
     ],
     resolve: {
         alias: {
-           
+            // Racine du JS Core (pour imports génériques ex: '@/lib/utils')
             '@': path.resolve(__dirname, './app/Core/Resources/js'),
-            '@features': path.resolve(__dirname, './app/Features'),
+            
+            // Accès direct au Design System (ex: '@ui/button')
+            '@ui': path.resolve(__dirname, './app/Core/Resources/js/ui'),
+            
+            // Accès System du Core (ex: '@core/auth')
+            '@core-system': path.resolve(__dirname, './app/Core/Resources/js/system'),
+            
+            // Accès aux Features Externes / Modules (ex: '@modules/Blog')
+            '@modules': path.resolve(__dirname, './app/Features'),
         },
     },
     server: {
@@ -30,6 +38,7 @@ export default defineConfig({
             ignored: ['**/storage/framework/views/**'],
         },
     },
+
     build: {
         rollupOptions: {
             output: {

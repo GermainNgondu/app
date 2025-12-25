@@ -2,8 +2,9 @@
 
 namespace App\Providers;
 
-use Illuminate\Support\ServiceProvider;
 use Laravel\Folio\Folio;
+use Illuminate\Support\ServiceProvider;
+use App\Core\System\Installer\Http\Middleware\RedirectToInstaller;
 
 class FolioServiceProvider extends ServiceProvider
 {
@@ -22,7 +23,7 @@ class FolioServiceProvider extends ServiceProvider
     {
         Folio::path(resource_path('views/pages'))->middleware([
             '*' => [
-                //
+                RedirectToInstaller::class,
             ],
         ]);
     }

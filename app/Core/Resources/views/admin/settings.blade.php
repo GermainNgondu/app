@@ -1,7 +1,7 @@
 @extends('core::layouts.app')
 
-@section('title', __('Paramètres'))
+@section('title', ucfirst(__('settings')))
 
 @section('content')
-    @react('Core::Admin/Settings/SettingsPage')@endreact
+    @react('Core::system/settings/components/SettingPage')@endreact
 @endsection
