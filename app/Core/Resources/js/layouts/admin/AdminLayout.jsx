@@ -4,6 +4,7 @@ import AdminHeader from "./AdminHeader";
 import { mountIslands } from '../../app.jsx';
 import { ThemeProvider } from "@/providers/theme-provider";
 import { ConfigProvider } from "@/providers/config-provider";
+import { UpdateProvider } from "@/providers/update-provider";
 import { Toaster } from "@/ui/sonner";
 import { SidebarProvider, SidebarInset } from "@/ui/sidebar";
 
@@ -46,20 +47,22 @@ export default function AdminLayout({ innerHtml, user, menu, currentRoute, title
     return (
         <ThemeProvider>
             <ConfigProvider settings={settings}>
-                <SidebarProvider open={sidebarOpen} onOpenChange={setSidebarOpen}>
-                    <div className="flex min-h-screen w-full">
-                        <AppSidebar user={user} menu={menu} currentRoute={currentRoute} settings={settings} />
+                <UpdateProvider>
+                    <SidebarProvider open={sidebarOpen} onOpenChange={setSidebarOpen}>
+                        <div className="flex min-h-screen w-full">
+                            <AppSidebar user={user} menu={menu} currentRoute={currentRoute} settings={settings} />
 
-                        <SidebarInset className="flex flex-col flex-1">
-                            <AdminHeader user={user} title={title} />
+                            <SidebarInset className="flex flex-col flex-1">
+                                <AdminHeader user={user} title={title} />
 
-                            <main className="flex-1 overflow-y-auto">
-                                <BladeContent html={innerHtml} />
-                            </main>
-                        </SidebarInset>
-                    </div>
-                    <Toaster />
-                </SidebarProvider>
+                                <main className="flex-1 overflow-y-auto">
+                                    <BladeContent html={innerHtml} />
+                                </main>
+                            </SidebarInset>
+                        </div>
+                        <Toaster />
+                    </SidebarProvider>
+                </UpdateProvider>
             </ConfigProvider>
         </ThemeProvider>
     );

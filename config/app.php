@@ -123,4 +123,6 @@ return [
         'store' => env('APP_MAINTENANCE_STORE', 'database'),
     ],
 
+    'update_secret' => env('APP_UPDATE_SECRET', 'admin-update-key'),
+
 ];

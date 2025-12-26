@@ -15,20 +15,19 @@ const queryClient = new QueryClient({
 });
 
 /**
- * 1. SCAN GLOBAL INTELLIGENT
+ * SCAN GLOBAL INTELLIGENT
  */
 const globImports = import.meta.glob([
     './ui/**/*.jsx',           // Design System
     './layouts/**/*.jsx',      // Layouts (Admin, Auth...)
     './system/**/*.jsx',     // System (Auth, Media...)
-    './common/**/*.jsx',       // Composants partagés
-    './components/**/*.jsx',   // Ancien dossier (à vider progressivement)
+    './common/**/*.jsx',       // Shared components
+    './components/**/*.jsx',
     '../../../Features/**/Resources/js/components/**/*.jsx' 
 ], { eager: true });
 
 /**
- * 2. RÉSOLVEUR DE CHEMINS
- * Transforme "Core::Admin/AppSidebar" en chemin de fichier réel
+ * PATH RESOLVER
  */
 const resolveComponent = (name) => {
     if (!name || typeof name !== 'string') return null;
@@ -39,22 +38,22 @@ const resolveComponent = (name) => {
     const namespace = parts[0]; 
     const componentPath = parts[1];
 
-    // Liste des chemins possibles à tester
+    // List of possible paths to test
     let possiblePaths = [];
 
     if (namespace === 'Core') {
-        // Pour le Core, on cherche dans les dossiers standards de la nouvelle architecture
+        // For the Core, we look for standard folders in the new architecture
         possiblePaths = [
-            `./layouts/${componentPath}.jsx`,      // 1. Est-ce un Layout ?
-            `./system/${componentPath}.jsx`,     // 2. Est-ce un System ?
-            `./ui/${componentPath}.jsx`,           // 3. Est-ce un composant UI ?
-            `./common/${componentPath}.jsx`,       // 4. Est-ce un utilitaire ?
-            `./components/${componentPath}.jsx`,   // 5. Fallback ancien dossier
-            `./${componentPath}.jsx`               // 6. Racine (rare)
+            `./layouts/${componentPath}.jsx`,
+            `./system/${componentPath}.jsx`,
+            `./ui/${componentPath}.jsx`,
+            `./common/${componentPath}.jsx`,
+            `./components/${componentPath}.jsx`,
+            `./${componentPath}.jsx`
         ];
     } else {
-        // Pour les Modules externes (ex: Blog::PostList)
-        // On suppose que componentPath est "PostList"
+        // For external modules (ex: Blog::PostList)
+        // We suppose that componentPath is "PostList"
         possiblePaths = [
             `../../../Features/${namespace}/Resources/js/components/${componentPath}.jsx`
         ];
@@ -67,32 +66,32 @@ const resolveComponent = (name) => {
         }
     }
 
-    console.warn(`[React Resolver] Composant introuvable : ${name}`);
+    console.warn(`[React Resolver] Component not found : ${name}`);
     if (import.meta.env.DEV) {
-        console.warn(`Chemins testés :`, possiblePaths);
+        console.warn(`Paths tested :`, possiblePaths);
     }
 
     return null;
 };
 
 /**
- * Monte les composants React dans les balises HTML <div data-react-component="...">
+ * Mount React components in HTML <div data-react-component="...">
  */
 export function mountIslands(container = document) {
     const islands = container.querySelectorAll('[data-react-component]');
 
     islands.forEach(el => {
-        // Protection contre le double montage
+        // Protection against double mounting
         if (el.dataset.mounted === "true") return;
 
         const name = el.dataset.reactComponent;
         
-        // Lecture sécurisée des props JSON
+        // Secure JSON parsing
         let props = {};
         try {
             props = JSON.parse(el.dataset.props || '{}');
         } catch (e) {
-            console.error(`Erreur de parsing JSON pour le composant ${name}`, e);
+            console.error(`Error parsing JSON for component ${name}`, e);
         }
 
         const module = resolveComponent(name);
@@ -106,14 +105,28 @@ export function mountIslands(container = document) {
                     <Component {...props} />
                 </QueryClientProvider>
             );
-            
-            // Marque l'élément comme monté
+
             el.dataset.mounted = "true";
         }
     });
 }
 
 document.addEventListener('DOMContentLoaded', async () => {
-    await loadTranslations(window.locale || 'en');
-    mountIslands(document);
+    try {
+        await loadTranslations(window.locale || 'en');
+        mountIslands(document);
+
+    } catch (error) {
+        console.error("Critical error at startup :", error);
+    } finally {
+
+        const loader = document.getElementById('app-loader');
+        if (loader) {
+            loader.style.opacity = '0';
+            
+            setTimeout(() => {
+                loader.remove();
+            }, 500);
+        }
+    }
 });

@@ -1,6 +1,6 @@
 import React from 'react';
 import * as Icons from "lucide-react";
-import { Sun, Moon, Settings,ChevronsUpDown, LogOut, Command,User } from "lucide-react";
+import { Sun, Moon, Settings,ChevronsUpDown, LogOut, Command,User,RefreshCw } from "lucide-react";
 import { __ } from '@/common/lib/i18n';
 import { 
     Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, 
@@ -10,7 +10,6 @@ import {
 import {
     DropdownMenu,
     DropdownMenuContent,
-    DropdownMenuGroup,
     DropdownMenuItem,
     DropdownMenuLabel,
     DropdownMenuSeparator,
@@ -23,8 +22,10 @@ import {
 
 import { useTheme } from "@/providers/theme-provider";
 import { useConfig } from "@/providers/config-provider";
+import { useUpdateStatus } from "@/providers/update-provider";
 
 export default function AppSidebar({ menu, user, settings }) {
+    const { hasUpdate } = useUpdateStatus();
     const { setTheme, theme } = useTheme();
     // Fonction de déconnexion
     const handleLogout = () => {
@@ -89,6 +90,22 @@ export default function AppSidebar({ menu, user, settings }) {
             {/* LE NOUVEAU FOOTER (Comme sur votre image) */}
             <SidebarFooter>
                 <SidebarMenu>
+                    <SidebarMenuItem>
+                        <SidebarMenuButton 
+                            asChild 
+                            tooltip={__('Mises à jour')}
+                        >
+                            <a href="/admin/system/update" className="flex items-center gap-3">
+                                <RefreshCw className={hasUpdate ? "animate-spin-slow h-4 w-4" : "h-4 w-4"} />
+                                <span className="font-medium">{__('Mise à jour')}</span>
+                                {hasUpdate && (
+                                    <span className="ml-auto bg-primary text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full">
+                                        {__('Nouvelle')}
+                                    </span>
+                                )}
+                            </a>
+                        </SidebarMenuButton>
+                    </SidebarMenuItem>
                     <SidebarMenuItem>
                         <DropdownMenu>
                             <DropdownMenuTrigger asChild>
