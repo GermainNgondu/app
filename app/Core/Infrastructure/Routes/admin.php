@@ -4,6 +4,7 @@ use Illuminate\Support\Facades\Route;
 use App\Core\System\Admin\Actions\DashboardAction;
 use App\Core\System\Media\Actions\UploadMediaAction;
 use App\Core\System\Media\Actions\GetMediaListAction;
+use App\Core\System\Media\Actions\UploadYoutubeAction;
 use App\Core\System\Media\Actions\SearchUnsplashAction;
 use App\Core\System\Media\Actions\UploadFromUnsplashAction;
 use App\Core\System\Media\Actions\UploadMediaFromUrlAction;
@@ -38,6 +39,7 @@ Route::middleware(['web', 'auth'])->prefix('admin')->group(function () {
         Route::post('upload', UploadMediaAction::class)->name('admin.media.upload');
 
         Route::post('upload-url', UploadMediaFromUrlAction::class)->name('admin.media.upload-url');
+        Route::post('upload-youtube', UploadYoutubeAction::class)->name('admin.media.upload.youtube');
         Route::post('unsplash/save', UploadFromUnsplashAction::class)->name('admin.media.unsplash.save');
 
         Route::post('ai/generate', GenerateAndUploadAiImageAction::class)->name('admin.media.ai.generate');

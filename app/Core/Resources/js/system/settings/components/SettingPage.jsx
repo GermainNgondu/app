@@ -12,7 +12,7 @@ import { Label } from "@ui/label";
 import { Button } from "@ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@ui/select";
 import { Switch } from "@ui/switch";
-import { ImagePicker } from "@ui/image-picker";
+import { MediaPicker } from "@ui/media-picker";
 import { SettingsSkeleton } from './SettingsSkeleton';
 
 export default function SettingsPage() {
@@ -70,7 +70,7 @@ export default function SettingsPage() {
     if (isError) return <div className="p-10 text-red-500">{__('unable_load_settings')}</div>;
 
     return (
-        <form onSubmit={(e) => { e.preventDefault(); mutation.mutate(data); }} className="space-y-6">
+        <form onSubmit={(e) => { e.preventDefault(); mutation.mutate(data); }} className="space-y-6 pb-20">
             <div className="flex items-center justify-between sticky top-0 bg-white/80 dark:bg-zinc-950/80 backdrop-blur-md z-10 py-4 border-b border-zinc-200 dark:border-zinc-800 mb-6">
                 <div>
                     <h2 className="text-2xl font-bold tracking-tight">{__('system_settings')}</h2>
@@ -83,20 +83,20 @@ export default function SettingsPage() {
             </div>
             <Tabs defaultValue="general" className="w-full">
                 <TabsList className="grid w-full max-w-2xl grid-cols-3">
-                    <TabsTrigger value="general">{__('Général')}</TabsTrigger>
-                    <TabsTrigger value="appearance">{__('Apparence')}</TabsTrigger>
-                    <TabsTrigger value="localization">{__('Langue & Date')}</TabsTrigger>
+                    <TabsTrigger value="general" className="cursor-pointer capitalize">{__('general')}</TabsTrigger>
+                    <TabsTrigger value="appearance" className="cursor-pointer capitalize">{__('appearance')}</TabsTrigger>
+                    <TabsTrigger value="localization" className="cursor-pointer capitalize">{__('language & date')}</TabsTrigger>
                 </TabsList>
 
                 {/* --- ONGLET GÉNÉRAL --- */}
                 <TabsContent value="general" className="space-y-4 mt-4 max-w-3xl animate-in fade-in slide-in-from-bottom-2">
                     <Card>
                         <CardHeader>
-                            <CardTitle>{__('Identité de l\'application')}</CardTitle>
+                            <CardTitle>{__('identity_app')}</CardTitle>
                         </CardHeader>
                         <CardContent className="space-y-4">
                             <div className="grid gap-2">
-                                <Label htmlFor="app_name">{__('Nom de l\'application')}</Label>
+                                <Label htmlFor="app_name">{__('app_name')}</Label>
                                 <Input 
                                     id="app_name" 
                                     value={data.app_name} 
@@ -104,7 +104,7 @@ export default function SettingsPage() {
                                 />
                             </div>
                             <div className="grid gap-2">
-                                <Label htmlFor="app_description">{__('Description (SEO)')}</Label>
+                                <Label htmlFor="app_description">{__('app_description')}</Label>
                                 <Textarea 
                                     id="app_description" 
                                     value={data.app_description} 
@@ -113,7 +113,7 @@ export default function SettingsPage() {
                                 />
                             </div>
                             <div className="grid gap-2">
-                                <Label htmlFor="app_url">{__('URL Publique')}</Label>
+                                <Label htmlFor="app_url">{__('app_url')}</Label>
                                 <Input 
                                     id="app_url" 
                                     value={data.app_url} 
@@ -129,8 +129,8 @@ export default function SettingsPage() {
                         </CardHeader>
                         <CardContent className="flex items-center justify-between">
                             <div className="space-y-0.5">
-                                <Label>{__('Mode Maintenance')}</Label>
-                                <p className="text-sm text-zinc-500">{__('Si activé, seul l\'admin sera accessible.')}</p>
+                                <Label>{__('maintenance_mode')}</Label>
+                                <p className="text-sm text-zinc-500">{__('if_enabled_only_admin_will_be_accessible.')}</p>
                             </div>
                             <Switch 
                                 checked={data.maintenance_mode} 
@@ -148,14 +148,16 @@ export default function SettingsPage() {
                             <CardDescription>{__('Ces images apparaîtront dans le header et les onglets du navigateur.')}</CardDescription>
                         </CardHeader>
                         <CardContent className="space-y-6">
-                            <ImagePicker 
+                            <MediaPicker 
                                 label={__('Logo de l\'application')}
                                 value={data.app_logo}
+                                accept="image"
                                 onChange={url => setData({...data, app_logo: url})}
                             />
-                            <ImagePicker 
+                            <MediaPicker 
                                 label={__('Favicon (32x32)')}
                                 value={data.app_favicon}
+                                accept="image"
                                 onChange={url => setData({...data, app_favicon: url})}
                             />
                         </CardContent>
@@ -166,17 +168,17 @@ export default function SettingsPage() {
                 <TabsContent value="localization" className="space-y-4 mt-4 max-w-3xl animate-in fade-in slide-in-from-bottom-2">
                     <Card>
                         <CardHeader>
-                            <CardTitle>{__('Régionalisation')}</CardTitle>
-                            <CardDescription>{__('Définissez la langue par défaut et le fuseau horaire du système.')}</CardDescription>
+                            <CardTitle>{__('localization')}</CardTitle>
+                            <CardDescription>{__('define_default_language_and_system_timezone.')}</CardDescription>
                         </CardHeader>
                         <CardContent className="space-y-4">
                             
                             {/* Sélecteur de Langue Dynamique */}
                             <div className="grid gap-2">
-                                <Label>{__('Langue par défaut')}</Label>
+                                <Label>{__('default_language')}</Label>
                                 <Select value={data.app_locale} onValueChange={val => setData({...data, app_locale: val})}>
                                     <SelectTrigger>
-                                        <SelectValue placeholder={__('Sélectionner une langue')} />
+                                        <SelectValue placeholder={__('select_language')} />
                                     </SelectTrigger>
                                     <SelectContent>
                                         {locales.map((locale) => (
@@ -190,10 +192,10 @@ export default function SettingsPage() {
 
                             {/* Sélecteur de Timezone Dynamique */}
                             <div className="grid gap-2">
-                                <Label>{__('Fuseau horaire')}</Label>
+                                <Label>{__('timezone')}</Label>
                                 <Select value={data.app_timezone} onValueChange={val => setData({...data, app_timezone: val})}>
                                     <SelectTrigger>
-                                        <SelectValue placeholder={__('Sélectionner un fuseau')} />
+                                        <SelectValue placeholder={__('select_timezone')} />
                                     </SelectTrigger>
                                     <SelectContent className="max-h-[300px]">
                                         {timezones.slice(0, 300).map((tz) => (

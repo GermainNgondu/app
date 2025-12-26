@@ -5,6 +5,7 @@ namespace App\Core\System\Media\Data;
 use Spatie\LaravelData\Data;
 use Spatie\MediaLibrary\MediaCollections\Models\Media;
 
+
 class MediaData extends Data
 {
     public function __construct(
@@ -13,27 +14,32 @@ class MediaData extends Data
         public string $file_name,
         public string $mime_type,
         public int $size,
-        public string $url,        // L'URL originale
-        public ?string $thumbnail, // L'URL de la miniature (si conversion)
-        public string $updated_at,
+        public string $url,
+        public ?string $thumbnail,
+        public string $extension,
+        public ?string $disk,
+        public ?string $updated_at,
     ) {}
 
-    /**
-     * Cette méthode magique permet de mapper le Modèle Media vers ce DTO.
-     */
     public static function fromModel(Media $media): self
     {
+        $url = $media->getUrl();
+        
+        if ($media->mime_type === 'video/youtube' && $media->hasCustomProperty('youtube_url')) {
+            $url = $media->getCustomProperty('youtube_url');
+        }
+
         return new self(
             id: $media->id,
             name: $media->name,
             file_name: $media->file_name,
             mime_type: $media->mime_type,
             size: $media->size,
-            // Spatie MediaLibrary : méthode getUrl()
-            url: $media->getUrl(), 
-            // On vérifie si une conversion 'thumb' existe, sinon on prend l'original
-            thumbnail: $media->hasGeneratedConversion('thumb') ? $media->getUrl('thumb') : $media->getUrl(),
-            updated_at: $media->updated_at->diffForHumans(),
+            url: $url, 
+            thumbnail: $media->getUrl(),
+            extension: $media->extension,
+            disk: $media->disk,
+            updated_at: $media->updated_at?->diffForHumans()
         );
     }
 }

@@ -11,8 +11,10 @@ use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\ServiceProvider;
 use App\Core\System\Intents\IntentManager;
 use App\Core\System\Intents\Facades\Intent;
+use App\Core\Support\Contracts\UserProvider;
 use App\Core\System\Features\FeatureManager;
 use App\Core\System\Dashboard\Data\DashboardWidget;
+use App\Core\System\Auth\Services\EloquentUserProvider;
 use App\Core\System\Dashboard\Services\DashboardRegistry;
 use App\Core\System\Activity\Actions\LogManualActivityAction;
 use App\Core\System\Notifications\Actions\SendNotificationAction;
@@ -21,27 +23,27 @@ use App\Core\System\Notifications\Actions\SendNotificationAction;
 class CoreServiceProvider extends ServiceProvider
 {
     /**
-     * Enregistrement des Singletons et services de base.
+     * Register Singletons and base services.
      */
     public function register(): void
     {
         $this->app->singleton(DashboardRegistry::class);
-        // Enregistre l'IntentManager (Singleton)
+
         $this->app->singleton(IntentManager::class, fn() => new IntentManager());
 
-        // Enregistre le FeatureManager (Singleton)
         $this->app->singleton(FeatureManager::class, fn() => new FeatureManager());
+
+        $this->app->bind(UserProvider::class, EloquentUserProvider::class);
     }
 
     /**
-     * Bootstrapping de la plateforme.
+     * Bootstrap services.
      */
     public function boot(): void
     {
         $composerData = json_decode(file_get_contents(base_path('composer.json')), true);
         $appVersion = $composerData['version'] ?? '1.0.0';
 
-        // Partager avec toutes les vues Blade
         View::share('appVersion', $appVersion);
 
         $this->registerCoreResources();
@@ -55,22 +57,18 @@ class CoreServiceProvider extends ServiceProvider
         $this->bootDashboard();
         $this->bootBladeDirectives();
 
-        // Enregistrement de l'Intent
         Intent::register('core.notify', SendNotificationAction::class);
         Intent::register('core.log', LogManualActivityAction::class);
 
     }
 
     /**
-     * Vérifie si l'application est prête à requêter la base de données
+     * Check if the application is ready to query the database
      */
     protected function appIsInstalled(): bool
     {
-        // On vérifie l'existence du fichier créé par l'installeur
+        // Check if the installation file exists
         $installed = File::exists(storage_path('installed'));
-
-        // Sécurité supplémentaire : si on est en ligne de commande (migrations), 
-        // on évite aussi de bloquer le processus
 
         if ($this->app->runningInConsole()) {
             return Schema::hasTable('features');
@@ -84,7 +82,7 @@ class CoreServiceProvider extends ServiceProvider
     }
 
     /**
-     * Configuration du Menu du Core.
+     * Configure the Core menu.
      */
     private function bootMenu(): void
     {
@@ -166,7 +164,7 @@ class CoreServiceProvider extends ServiceProvider
     }
 
     /**
-     * Charge les migrations, vues et traductions du Core.
+     * Load migrations, views and translations from the Core.
      */
     protected function registerCoreResources(): void
     {
@@ -177,7 +175,7 @@ class CoreServiceProvider extends ServiceProvider
     }
 
     /**
-     * Charge les routes standards (Web et API) du Core.
+     * Load core routes.
      */
     protected function registerCoreRoutes(): void
     {
@@ -188,7 +186,7 @@ class CoreServiceProvider extends ServiceProvider
     }
 
     /**
-     * Démarre dynamiquement les Features actives.
+     * Start dynamically active features.
      */
     protected function bootActiveFeatures(): void
     {

@@ -21,7 +21,7 @@ const BladeContent = memo(({ html }) => {
 
     return (
         <div 
-            className="h-full w-full"
+            className="w-full"
             dangerouslySetInnerHTML={{ __html: html }}
             ref={contentRef}
         />
@@ -49,13 +49,13 @@ export default function AdminLayout({ innerHtml, user, menu, currentRoute, title
             <ConfigProvider settings={settings}>
                 <UpdateProvider>
                     <SidebarProvider open={sidebarOpen} onOpenChange={setSidebarOpen}>
-                        <div className="flex min-h-screen w-full">
+                        <div className="flex h-screen w-full overflow-hidden">
                             <AppSidebar user={user} menu={menu} currentRoute={currentRoute} settings={settings} />
 
-                            <SidebarInset className="flex flex-col flex-1">
+                            <SidebarInset className="flex flex-col flex-1 min-w-0 overflow-hidden">
                                 <AdminHeader user={user} title={title} />
 
-                                <main className="flex-1 overflow-y-auto">
+                                <main className="flex-1 overflow-y-auto relative bg-zinc-50/50 dark:bg-zinc-950/50">
                                     <BladeContent html={innerHtml} />
                                 </main>
                             </SidebarInset>

@@ -11,7 +11,7 @@ class MediaResponseData extends Data
         public string $uuid,
         public string $name,
         public string $original_url,
-        public ?string $thumb_url,
+        public ?string $thumbnail,
         public string $mime_type,
         public string $human_size,
     ) {}
@@ -21,13 +21,36 @@ class MediaResponseData extends Data
      */
     public static function fromModel(Media $media): self
     {
+        $thumbnail = $media->hasGeneratedConversion('thumb') 
+            ? $media->getFullUrl('thumb') 
+            : $media->getFullUrl();
+
         return new self(
             uuid: $media->uuid,
             name: $media->file_name,
             original_url: $media->getFullUrl(),
-            thumb_url: $media->hasGeneratedConversion('thumb') ? $media->getFullUrl('thumb') : null,
+            thumbnail: $thumbnail,
             mime_type: $media->mime_type,
             human_size: $media->human_readable_size,
         );
+    }
+
+    /**
+     * Formate un paginateur Laravel pour le frontend
+     */
+    public static function fromPaginator($paginator, array $collections = []): array
+    {
+        return [
+            'data' => array_map(
+                fn($item) => self::fromModel($item), 
+                $paginator->items()
+            ),
+            'meta' => [
+                'current_page' => $paginator->currentPage(),
+                'last_page' => $paginator->lastPage(),
+                'total' => $paginator->total(),
+                'collections' => $collections, 
+            ],
+        ];
     }
 }

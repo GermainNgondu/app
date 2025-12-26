@@ -2,15 +2,17 @@
 
 namespace App\Core\System\Auth\Actions;
 
-use App\Core\System\Auth\Data\LoginData;
+
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Validation\ValidationException;
+use App\Core\System\Auth\Data\LoginData;
 use Lorisleiva\Actions\Concerns\AsAction;
+use Illuminate\Validation\ValidationException;
 
 class LoginAction
 {
     use AsAction;
 
+    
     public function authorize(): bool
     {
         return Auth::guest();

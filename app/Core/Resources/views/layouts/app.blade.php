@@ -19,12 +19,29 @@
     </head>
 
     <body class="h-full font-sans antialiased text-zinc-900 overflow-hidden">
+        {{-- === SCRIPT DE GESTION DU LOADER === --}}
+        <script>
+            if (sessionStorage.getItem('app_is_ready')) {
+                document.body.classList.add('app-loaded');
+            }
+        </script>
 
+        {{-- === STYLE CSS INLINE === --}}
+        <style>
+            /* Par défaut le loader est visible */
+            #app-loader { opacity: 1; transition: opacity 0.5s ease-out; }
+            
+            /* masquage immédiat */
+            body.app-loaded #app-loader { display: none !important; }
+        </style>
+        
         <div id="app-loader" class="fixed inset-0 z-[100] flex flex-col items-center justify-center bg-white dark:bg-zinc-950 transition-opacity duration-500">
             <div class="flex flex-col items-center space-y-4">
                 {{-- Logo Optionnel --}}
-                @if(isset($settings['app_logo']))
-                    <img src="{{ $settings['app_logo'] }}" alt="Logo" class="h-12 w-auto animate-pulse">
+                @php  $logo = setting('app_logo',null) @endphp
+
+                @if($logo)
+                    <img src="{{ $logo }}" alt="Logo" class="h-12 w-auto animate-pulse">
                 @endif
                 
                 {{-- Spinner SVG (Tailwind) --}}
@@ -33,7 +50,7 @@
                     <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                 </svg>
                 
-                <p class="text-xs text-zinc-400 font-medium animate-pulse">{{ __('Chargement...') }}</p>
+                <p class="text-xs text-zinc-400 font-medium animate-pulse capitalize">{{ __('loading...') }}</p>
             </div>
         </div>
         @react('Core::layouts/admin/AdminLayout', [
@@ -43,10 +60,6 @@
             'title' => $__env->yieldContent('title', __('Panel Administration')),
             'settings'=> public_settings()
         ])
-            {{-- 
-                SLOT : Le contenu généré par Blade (via vos contrôleurs) 
-                sera injecté ici à l'intérieur du layout React.
-            --}}
             <div class="p-6 lg:p-10 animate-in fade-in duration-500">
                 @yield('content')
             </div>

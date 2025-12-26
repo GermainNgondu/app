@@ -5,7 +5,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@ui/tabs";
 import { Input } from "@ui/input";
 import { Label } from "@ui/label";
 import { Button } from "@ui/button";
-import { ImagePicker } from "@ui/image-picker"; 
+import { MediaPicker } from "@ui/media-picker"; 
 import { User, Lock, Loader2, Save } from "lucide-react";
 import { __ } from '@/common/lib/i18n';
 import { toast } from "sonner";
@@ -83,9 +83,10 @@ export default function ProfilePage({ user }) {
                                 {/* Avatar Picker */}
                                 <div className="flex flex-col gap-3">
                                     <Label>{__('profile_photo')}</Label>
-                                    <ImagePicker 
+                                    <MediaPicker 
                                         label={__('change_avatar')}
                                         value={formData.avatar_url}
+                                        accept="image"
                                         onChange={(url) => setFormData(prev => ({ ...prev, avatar_url: url }))}
                                     />
                                 </div>
