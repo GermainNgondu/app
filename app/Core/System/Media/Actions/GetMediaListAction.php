@@ -2,57 +2,53 @@
 
 namespace App\Core\System\Media\Actions;
 
-
 use Illuminate\Http\Request;
 use Spatie\QueryBuilder\QueryBuilder;
 use Spatie\QueryBuilder\AllowedFilter;
+use App\Core\System\Media\Models\Media;
 use Illuminate\Database\Eloquent\Builder;
 use Lorisleiva\Actions\Concerns\AsAction;
 use App\Core\System\Media\Data\MediaResponseData;
-use Spatie\MediaLibrary\MediaCollections\Models\Media;
 
 class GetMediaListAction
 {
     use AsAction;
 
     /**
-     * Récupère la liste des médias avec filtres et métadonnées dynamiques.
+     * Récupère la liste des médias avec filtrage par type, collection et recherche.
      *
      * @param Request $request
      * @return array
      */
     public function handle(Request $request): array
     {
-        // 1. Récupération dynamique des noms de collections existantes en base de données
+        // Récupération dynamique des collections présentes en DB pour le filtre du Modal
         $collections = Media::query()
             ->select('collection_name')
             ->distinct()
             ->pluck('collection_name')
             ->toArray();
+        
+        // On prépare la requête de base selon le mode (Normal vs Corbeille)
+        $baseQuery = $request->boolean('trashed') 
+            ? Media::onlyTrashed() 
+            : Media::query();
 
-        // 2. Construction de la requête avec Spatie QueryBuilder
-        $medias = QueryBuilder::for(Media::class)
+        // Construction de la requête filtrable
+        $medias = QueryBuilder::for($baseQuery)
             ->allowedFilters([
-                // Filtre de recherche globale (Nom ou Nom de fichier)
-                AllowedFilter::callback('search', function (Builder $query, $value) {
-                    $searchTerm = is_array($value) ? ($value[0] ?? '') : $value;
-                    if (empty($searchTerm)) return;
-
-                    $query->where(function ($q) use ($searchTerm) {
-                        $q->where('name', 'LIKE', "%{$searchTerm}%")
-                          ->orWhere('file_name', 'LIKE', "%{$searchTerm}%");
-                    });
-                }),
+                // Recherche par nom ou nom de fichier
+                AllowedFilter::partial('search', 'name'),
                 
-                // Filtre exact par collection (ex: 'avatars', 'products')
+                // Filtre exact sur la collection
                 AllowedFilter::exact('collection', 'collection_name'),
 
-                // Filtre par type de média (image, video, audio, document)
+                // LOGIQUE DE FILTRAGE PAR TYPE (Indispensable pour le MediaPicker)
                 AllowedFilter::callback('type', function (Builder $query, $value) {
                     if ($value === 'image') {
                         $query->where('mime_type', 'LIKE', 'image/%');
                     } elseif ($value === 'video') {
-                        // Gère les vidéos physiques et les références YouTube
+                        // Supporte les vidéos réelles et les liens YouTube (mime_type personnalisé)
                         $query->where(function($q) {
                             $q->where('mime_type', 'LIKE', 'video/%')
                               ->orWhere('mime_type', 'video/youtube');
@@ -60,29 +56,26 @@ class GetMediaListAction
                     } elseif ($value === 'audio') {
                         $query->where('mime_type', 'LIKE', 'audio/%');
                     } elseif ($value === 'document') {
-                        // Exclut les formats visuels et sonores pour ne garder que les documents
+                        // On exclut les médias visuels/sonores pour ne garder que le reste (PDF, Doc, etc.)
                         $query->whereNot(function($q) {
                             $q->where('mime_type', 'LIKE', 'image/%')
                               ->orWhere('mime_type', 'LIKE', 'video/%')
                               ->orWhere('mime_type', 'video/youtube')
                               ->orWhere('mime_type', 'LIKE', 'audio/%');
                         });
-                    } else {
-                        $query->where('mime_type', 'LIKE', "%{$value}%");
                     }
                 }),
             ])
-            ->defaultSort('-created_at')
-            ->allowedSorts(['created_at', 'size', 'name'])
-            ->paginate($request->get('per_page', 20))
+            ->latest() // Les plus récents en premier
+            ->paginate($request->get('per_page', 24))
             ->appends($request->query());
 
-        // 3. Retourne les données formatées via le DTO avec les collections dynamiques
+        // On utilise le DTO pour formater la réponse avec les collections dynamiques
         return MediaResponseData::fromPaginator($medias, $collections);
     }
 
     /**
-     * Point d'entrée pour les requêtes API/HTTP.
+     * Point d'entrée pour la route API
      */
     public function asController(Request $request)
     {

@@ -211,7 +211,7 @@ export function MediaPicker({
                             <Button 
                                 variant="destructive" 
                                 size="icon" 
-                                className="absolute top-2 right-2 z-10 opacity-0 group-hover:opacity-100 transition-opacity"
+                                className="cursor-pointer absolute top-2 right-2 z-10 opacity-0 group-hover:opacity-100 transition-opacity"
                                 onClick={(e) => { e.stopPropagation(); handleRemove(0); }}
                             >
                                 <X className="h-4 w-4" />
@@ -225,7 +225,7 @@ export function MediaPicker({
                             </div>
                             <div className="space-y-0.5">
                                 <p className="text-sm font-medium text-zinc-700 dark:text-zinc-300">{placeholder}</p>
-                                <p className="text-xs text-zinc-400">Image, Vidéo, PDF, Audio...</p>
+                                <p className="text-xs text-zinc-400 capitalize">{accept}</p>
                             </div>
                         </div>
                     )}

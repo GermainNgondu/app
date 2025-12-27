@@ -8,48 +8,54 @@ use Spatie\MediaLibrary\MediaCollections\Models\Media;
 class MediaResponseData extends Data
 {
     public function __construct(
-        public string $uuid,
+        /** * On utilise l'UUID comme identifiant public.
+         * Cela évite d'exposer les IDs incrémentaux de la base de données.
+         */
+        public string $id, 
         public string $name,
-        public string $original_url,
+        public string $url,
         public ?string $thumbnail,
         public string $mime_type,
-        public string $human_size,
+        public int $size,
+        public string $file_name,
     ) {}
 
     /**
-     * Mapping depuis le modèle Spatie vers le DTO
+     * Transforme un modèle Spatie Media en DTO pour le Frontend.
      */
     public static function fromModel(Media $media): self
     {
+        // On récupère la miniature si elle existe, sinon l'URL originale
         $thumbnail = $media->hasGeneratedConversion('thumb') 
             ? $media->getFullUrl('thumb') 
             : $media->getFullUrl();
 
         return new self(
-            uuid: $media->uuid,
-            name: $media->file_name,
-            original_url: $media->getFullUrl(),
+            // STRATÉGIE : On injecte l'UUID dans la propriété 'id'
+            id: (string) $media->uuid, 
+            name: $media->name,
+            url: $media->getFullUrl(),
             thumbnail: $thumbnail,
             mime_type: $media->mime_type,
-            human_size: $media->human_readable_size,
+            // On force le cast en entier pour éviter le bug "NaN KB" en JS
+            size: (int) $media->size, 
+            file_name: $media->file_name,
         );
     }
 
     /**
-     * Formate un paginateur Laravel pour le frontend
+     * Formate une collection paginée avec les métadonnées.
      */
     public static function fromPaginator($paginator, array $collections = []): array
     {
         return [
-            'data' => array_map(
-                fn($item) => self::fromModel($item), 
-                $paginator->items()
-            ),
+            'data' => array_map(fn($item) => self::fromModel($item), $paginator->items()),
             'meta' => [
                 'current_page' => $paginator->currentPage(),
                 'last_page' => $paginator->lastPage(),
+                'per_page' => $paginator->perPage(),
                 'total' => $paginator->total(),
-                'collections' => $collections, 
+                'collections' => $collections, // Liste dynamique des dossiers pour le filtre
             ],
         ];
     }
