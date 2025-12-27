@@ -16,20 +16,12 @@ class ReorderWidgetsAction
     public function handle(array $widgetsOrder, $user)
     {
         // 1. On récupère les préférences actuelles de l'utilisateur
-        // On suppose que tu as une colonne 'preferences' de type JSON sur ta table users
         $preferences = $user->preferences ?? [];
 
-        // 2. On extrait le nouvel ordre
-        // On crée un tableau associatif : ['widget_key' => position]
-        $newOrder = [];
-        foreach ($widgetsOrder as $item) {
-            $newOrder[$item['key']] = $item['order'];
-        }
+        // 2. On met à jour la clé spécifique au dashboard
+        $preferences['dashboard_order'] = collect($widgetsOrder)->pluck('order', 'key')->toArray();
 
-        // 3. On met à jour la clé spécifique au dashboard
-        $preferences['dashboard_order'] = $newOrder;
-
-        // 4. On sauvegarde sur le modèle User
+        // 3. On sauvegarde sur le modèle User
         $user->forceFill([
             'preferences' => $preferences
         ])->save();

@@ -127,6 +127,14 @@ document.addEventListener('DOMContentLoaded', async () => {
         // Mark the app as ready for subsequent reloads
         sessionStorage.setItem('app_is_ready', 'true');
 
+        // Logic to detect if the link points to a React Feature
+        // and dynamically preload the component via globImports
+        document.querySelectorAll('a').forEach(link => {
+            link.addEventListener('mouseenter', () => {
+                const url = new URL(link.href);
+            });
+        });
+
     } catch (error) {
         console.error("Startup error:", error);
         // Remove the app_is_ready flag in case of critical error

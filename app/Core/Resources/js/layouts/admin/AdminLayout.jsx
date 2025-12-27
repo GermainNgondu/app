@@ -7,7 +7,8 @@ import { ConfigProvider } from "@/providers/config-provider";
 import { UpdateProvider } from "@/providers/update-provider";
 import { Toaster } from "@/ui/sonner";
 import { SidebarProvider, SidebarInset } from "@/ui/sidebar";
-
+import { motion } from "framer-motion";
+import GlobalCommandPalette from "./GlobalCommandPalette";
 
 const BladeContent = memo(({ html }) => {
     const contentRef = useRef(null);
@@ -56,10 +57,18 @@ export default function AdminLayout({ innerHtml, user, menu, currentRoute, title
                                 <AdminHeader user={user} title={title} />
 
                                 <main className="flex-1 overflow-y-auto relative bg-zinc-50/50 dark:bg-zinc-950/50">
-                                    <BladeContent html={innerHtml} />
+                                    <motion.div 
+                                        initial={{ opacity: 0, y: 10 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        transition={{ duration: 0.3 }}
+                                        className="p-6"
+                                    >
+                                        <BladeContent html={innerHtml} />
+                                    </motion.div>
                                 </main>
                             </SidebarInset>
                         </div>
+                        <GlobalCommandPalette />
                         <Toaster />
                     </SidebarProvider>
                 </UpdateProvider>

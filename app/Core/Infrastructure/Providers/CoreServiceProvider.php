@@ -6,16 +6,22 @@ use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\View;
 use App\Core\System\Auth\Models\User;
 use Illuminate\Support\Facades\Blade;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\ServiceProvider;
 use App\Core\System\Intents\IntentManager;
 use App\Core\System\Intents\Facades\Intent;
 use App\Core\Support\Contracts\UserProvider;
+use App\Core\Support\Facades\CommandPalette;
 use App\Core\System\Features\FeatureManager;
+use App\Core\Support\Registries\CommandRegistry;
+use App\Core\System\Admin\Actions\ClearCacheAction;
 use App\Core\System\Dashboard\Data\DashboardWidget;
+use App\Core\System\Admin\Actions\OptimizeSystemAction;
 use App\Core\System\Auth\Services\EloquentUserProvider;
 use App\Core\System\Dashboard\Services\DashboardRegistry;
+use App\Core\System\Features\Commands\MakeFeatureCommand;
 use App\Core\System\Activity\Actions\LogManualActivityAction;
 use App\Core\System\Notifications\Actions\SendNotificationAction;
 
@@ -27,6 +33,8 @@ class CoreServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
+        $this->app->singleton(CommandRegistry::class);
+        
         $this->app->singleton(DashboardRegistry::class);
 
         $this->app->singleton(IntentManager::class, fn() => new IntentManager());
@@ -53,13 +61,21 @@ class CoreServiceProvider extends ServiceProvider
             $this->bootActiveFeatures();
         }
 
+        if ($this->app->runningInConsole()) {
+            $this->commands([
+                MakeFeatureCommand::class,
+            ]);
+        }
+
         $this->bootMenu();
         $this->bootDashboard();
+        $this->bootCoreCommands();
         $this->bootBladeDirectives();
 
         Intent::register('core.notify', SendNotificationAction::class);
         Intent::register('core.log', LogManualActivityAction::class);
-
+        Intent::register('core.optimize', OptimizeSystemAction::class);
+        Intent::register('core.clear_cache', ClearCacheAction::class);
     }
 
     /**
@@ -67,18 +83,19 @@ class CoreServiceProvider extends ServiceProvider
      */
     protected function appIsInstalled(): bool
     {
-        // Check if the installation file exists
-        $installed = File::exists(storage_path('installed'));
-
-        if ($this->app->runningInConsole()) {
-            return Schema::hasTable('features');
+        // Vérification du fichier témoin en priorité
+        if (! File::exists(storage_path('installed'))) {
+            return false;
         }
 
-        if ($installed) {
-            return Schema::hasTable('features');
-        }
-
-        return $installed;
+        // On peut mettre en cache le résultat de la vérification de table pour éviter les requêtes SQL SQL
+        return Cache::rememberForever('system_installed_db_check', function() {
+            try {
+                return Schema::hasTable('features');
+            } catch (\Exception $e) {
+                return false;
+            }
+        });
     }
 
     /**
@@ -121,7 +138,39 @@ class CoreServiceProvider extends ServiceProvider
                 ->value(fn() => ['value' => 'Opérationnel', 'color' => 'text-green-500'])
         );
     }
+    
+    private function bootCoreCommands(): void
+    {
+        CommandPalette::register([
+            'label' => 'Tableau de bord',
+            'icon' => 'LayoutDashboard',
+            'type' => 'nav',
+            'value' => '/admin/dashboard',
+            'group' => 'Navigation'
+        ]);
+        CommandPalette::register([
+            'label' => 'Paramètres',
+            'icon' => 'Settings',
+            'type' => 'nav',
+            'value' => '/admin/settings',
+            'group' => 'Navigation'
+        ]);
 
+        CommandPalette::register([
+            'label' => 'Vider le cache',
+            'icon' => 'Trash2',
+            'type' => 'intent',
+            'value' => 'core.clear_cache',
+            'group' => 'Système'
+        ]);
+        CommandPalette::register([
+            'label' => 'Optimiser le système',
+            'icon' => 'Zap',
+            'type' => 'intent',
+            'value' => 'core.optimize',
+            'group' => 'Système'
+        ]);
+    }
     /**
      * Définition des directives Blade personnalisées (@react / @endreact).
      */
@@ -168,7 +217,18 @@ class CoreServiceProvider extends ServiceProvider
      */
     protected function registerCoreResources(): void
     {
-        $this->loadMigrationsFrom(app_path('Core/Database/Migrations'));
+        //Chargement intelligent des migrations
+        $migrationPaths = [app_path('Core/Database/Migrations')];
+        
+        // Permet de charger des migrations situées dans des sous-dossiers de System
+        $systemPaths = File::directories(app_path('Core/System'));
+        foreach ($systemPaths as $path) {
+            if (File::isDirectory($path . '/Database/Migrations')) {
+                $migrationPaths[] = $path . '/Database/Migrations';
+            }
+        }
+
+        $this->loadMigrationsFrom($migrationPaths);
         $this->loadViewsFrom(app_path('Core/Resources/views'), 'core');
         $this->loadJsonTranslationsFrom(app_path('Core/Resources/lang'));
         $this->loadTranslationsFrom(app_path('Core/Resources/lang'), 'core');

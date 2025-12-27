@@ -7,17 +7,32 @@ import { __ } from '@/common/lib/i18n';
 import axios from 'axios';
 import { toast } from "sonner";
 
+const MIME_TYPES = {
+    image: { 'image/*': ['.jpeg', '.jpg', '.png', '.webp', '.gif', '.svg'] },
+    video: { 'video/*': ['.mp4', '.webm', '.mov', '.avi'] },
+    audio: { 'audio/*': ['.mp3', '.wav', '.m4a'] },
+    document: { 'application/pdf': ['.pdf'], 'application/msword': ['.doc'], 'application/vnd.openxmlformats-officedocument.wordprocessingml.document': ['.docx'] },
+};
+
 export const MediaUploadTab = ({ onUploadSuccess, allowedType }) => {
     const [uploading, setUploading] = useState(false);
     const [progress, setProgress] = useState(0);
 
-    const onDrop = useCallback(acceptedFiles => {
+    const onDrop = useCallback((acceptedFiles, fileRejections) => {
+        // Manage rejected files immediately (Too big, wrong format)
+        if (fileRejections.length > 0) {
+            fileRejections.forEach(({ file, errors }) => {
+                toast.error(`${file.name}: ${errors[0].message}`);
+            });
+            return;
+        }
         handleUpload(acceptedFiles);
-    }, []);
+    }, [allowedType]);
 
     const { getRootProps, getInputProps, isDragActive } = useDropzone({ 
         onDrop,
-        accept: allowedType === 'image' ? { 'image/*': [] } : undefined 
+        accept: MIME_TYPES[allowedType] || undefined,
+        maxSize: 1024 * 1024 * 1024, // Limit to 1GB on client side
     });
 
     const handleUpload = async (files) => {

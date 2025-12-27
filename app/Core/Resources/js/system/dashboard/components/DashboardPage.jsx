@@ -3,8 +3,9 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import axios from 'axios';
 import { __ } from '@/common/lib/i18n'; //
 import * as Icons from "lucide-react";
-import { GripVertical } from "lucide-react";
+import { GripVertical,Settings2, EyeOff, Check } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@ui/card";
+import { Button } from '@/ui/button';
 import { DashboardSkeleton } from './DashboardSkeleton';
 
 import {
@@ -25,8 +26,10 @@ import {
 import { CSS } from '@dnd-kit/utilities';
 
 export default function DashboardPage() {
+    
     const queryClient = useQueryClient();
     const [items, setItems] = useState([]);
+    const [isEditing, setIsEditing] = useState(false);
 
     // Chargement des widgets
     const { data: initialWidgets, isLoading, isError } = useQuery({
@@ -74,6 +77,17 @@ export default function DashboardPage() {
         <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-700">
             <div className="flex items-center justify-between">
                 <h2 className="text-3xl font-bold tracking-tight mb-6">{__('dashboard')}</h2>
+                <div className="flex gap-2">
+                    <Button 
+                        className="cursor-pointer capitalize"
+                        variant={isEditing ? "default" : "outline"} 
+                        size="sm" 
+                        onClick={() => setIsEditing(!isEditing)}
+                    >
+                        {isEditing ? <Check className="w-4 h-4 mr-2" /> : <Settings2 className="w-4 h-4 mr-2" />}
+                        {isEditing ? __('Terminer') : __('Personnaliser')}
+                    </Button>
+                </div>
                 {reorderMutation.isPending && <span className="text-xs text-zinc-400">{__('saving')}</span>}
             </div>
 
@@ -81,7 +95,8 @@ export default function DashboardPage() {
                 <SortableContext items={items.map(i => i.key)} strategy={rectSortingStrategy}>
                     <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
                         {items.map((widget) => (
-                            <SortableWidget key={widget.key} widget={widget} />
+                            <SortableWidget key={widget.key} widget={widget} isEditing={isEditing} 
+                                onHide={() => handleHide(widget.key)}/>
                         ))}
                     </div>
                 </SortableContext>
@@ -90,7 +105,7 @@ export default function DashboardPage() {
     );
 }
 
-function SortableWidget({ widget }) {
+function SortableWidget({ widget, isEditing, onHide }) {
     const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: widget.key });
 
     const style = {
@@ -105,14 +120,16 @@ function SortableWidget({ widget }) {
 
     return (
         <Card ref={setNodeRef} style={style} className={`${colSpanClass} group relative hover:shadow-md transition-shadow`}>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium flex items-center gap-2">
-                    <button {...attributes} {...listeners} className="opacity-0 group-hover:opacity-100 cursor-grab active:cursor-grabbing text-zinc-400 hover:text-zinc-600 transition-opacity">
-                        <GripVertical className="h-4 w-4" />
-                    </button>
+            <CardHeader className="flex flex-row items-center justify-between">
+                <CardTitle className="flex items-center gap-2">
+                    {isEditing && <GripVertical {...attributes} {...listeners} className="cursor-grab" />}
                     {__(widget.title)}
                 </CardTitle>
-                <IconComponent className="h-4 w-4 text-muted-foreground" />
+                {isEditing && (
+                    <Button variant="ghost" size="icon" onClick={onHide}>
+                        <EyeOff className="h-4 w-4 text-zinc-400" />
+                    </Button>
+                )}
             </CardHeader>
             <CardContent>
                 <div className={`text-2xl font-bold ${widget.data?.color || ''}`}>

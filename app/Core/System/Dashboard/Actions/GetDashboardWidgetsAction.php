@@ -16,7 +16,7 @@ class GetDashboardWidgetsAction
     public function handle(): array
     {
         $user = Auth::user();
-        $widgets = $this->registry->resolveAll();
+        $widgets = $this->registry->resolveForUser();
     
         // Vérification : si preferences est bien un tableau et contient l'ordre
         if (is_array($user->preferences) && isset($user->preferences['dashboard_order'])) {

@@ -2,6 +2,7 @@
 
 namespace App\Core\System\Media\Actions;
 
+use Illuminate\Support\Str;
 use Illuminate\Http\Request;
 use Spatie\LaravelData\DataCollection;
 use App\Core\System\Media\Data\MediaData;
@@ -20,17 +21,25 @@ class UploadMediaAction
     {
         $library = Library::firstOrCreate(['slug' => 'default'], ['name' => 'Bibliothèque Globale']);
         
+        $processFile = function($file) use ($library) {
+            
+            $originalName = pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME);
+            $extension = $file->getClientOriginalExtension();
+            $safeName = Str::slug($originalName) . '.' . $extension;
+
+            $media = $library->addMedia($file)
+                ->usingFileName($safeName)
+                ->toMediaCollection('default');
+
+            return MediaData::fromModel($media);
+        };
+
         if (is_array($files)) {
-            $uploadedMedia = [];
-            foreach ($files as $file) {
-                $media = $library->addMedia($file)->toMediaCollection('default');
-                $uploadedMedia[] = MediaData::fromModel($media);
-            }
+            $uploadedMedia = array_map($processFile, $files);
             return MediaData::collect($uploadedMedia, DataCollection::class);
         }
 
-        $media = $library->addMedia($files)->toMediaCollection('default');
-        return MediaData::fromModel($media);
+        return $processFile($files);
     }
 
     public function asController(Request $request)
@@ -43,14 +52,10 @@ class UploadMediaAction
             'video'    => 'mp4,webm,ogg,mov,avi',
             'audio'    => 'mp3,wav,ogg,m4a',
             'document' => 'pdf,doc,docx,xls,xlsx,txt,csv,zip,rar,pptx,ppt',
-            // Liste "Safe" par défaut (exclut PHP, JS, HTML, EXE, etc.)
             'all'      => 'jpg,jpeg,png,webp,gif,svg,mp4,webm,pdf,doc,docx,xls,xlsx,txt,zip'
         ];
 
-        // On récupère la liste des extensions autorisées
         $allowedExtensions = $rulesByGroup[$type] ?? $rulesByGroup['all'];
-
-        // Validation stricte
         $request->validate([
             'type'    => 'nullable|string|in:image,video,audio,document,all',
             'files'   => 'nullable|array',

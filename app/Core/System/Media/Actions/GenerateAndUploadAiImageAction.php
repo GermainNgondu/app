@@ -5,17 +5,23 @@ namespace App\Core\System\Media\Actions;
 use Spatie\MediaLibrary\HasMedia;
 use Illuminate\Support\Facades\Http;
 use Lorisleiva\Actions\Concerns\AsAction;
+use Illuminate\Contracts\Queue\ShouldQueue;
 use App\Core\System\Media\Data\UrlUploadData;
 use App\Core\System\Media\Data\AiGenerationData;
 
-class GenerateAndUploadAiImageAction
+class GenerateAndUploadAiImageAction implements ShouldQueue
 {
     use AsAction;
+    public function configureJob($job)
+    {
+        $job->onQueue('media');
+    }
 
     public function handle(HasMedia $model, AiGenerationData $data)
     {
         // 1. Appel à OpenAI (DALL-E 3 par exemple)
         $response = Http::withToken(config('services.openai.key'))
+            ->timeout(60)
             ->post('https://api.openai.com/v1/images/generations', [
                 'model' => 'dall-e-3',
                 'prompt' => $data->prompt,

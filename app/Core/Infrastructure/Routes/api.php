@@ -1,7 +1,10 @@
 <?php
 
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
+use App\Core\System\Intents\Facades\Intent;
 use App\Core\Support\Helpers\TranslationHelper;
+use App\Core\System\Admin\Actions\GetCommandsAction;
 use App\Core\System\Settings\Actions\GetSettingsAction;
 use App\Core\System\Updater\Actions\InstallUpdateAction;
 use App\Core\System\Auth\Actions\UpdateUserProfileAction;
@@ -37,6 +40,14 @@ Route::middleware(['web', 'auth'])->prefix('admin')->group(function () {
     Route::post('dashboard/reorder', ReorderWidgetsAction::class)->name('admin.api.dashboard.reorder');
     Route::post('profile', UpdateUserProfileAction::class)->name('admin.api.profile.update');
 
+    Route::get('commands', GetCommandsAction::class)->name('admin.commands.index');
+    Route::post('intents/execute', function(Request $request) {
+        
+        $intentName = $request->input('intent');
+
+        $result = Intent::execute($intentName);
+        return response()->json($result);
+    });
 
     Route::prefix('system/update')->name('system.update')->group(function() {
 
